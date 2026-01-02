@@ -193,19 +193,29 @@ export async function registerRoutes(
       const contextText = docs.map(d => `Source: ${d.title}\n${d.content}`).join("\n\n");
 
       // 4. Construct Prompt - Strict RAG: ONLY use knowledge base
-      const systemInstruction = `
+      // Format Q&A entries more explicitly
+      const formattedContext = docs.map(d => {
+        const meta = d.metadata as { question?: string; response?: string } | null;
+        if (d.sourceType === 'faq' && meta?.question && meta?.response) {
+          return `QUESTION: "${meta.question}"\nANSWER: "${meta.response}"`;
+        }
+        return `SOURCE: ${d.title}\nCONTENT: ${d.content}`;
+      }).join("\n\n---\n\n");
+
+      const systemInstruction = `You are a library assistant that ONLY answers based on the provided knowledge base.
+
+STRICT RULES:
+1. You can ONLY use information from the KNOWLEDGE BASE below
+2. You must NEVER use your general knowledge or training data
+3. If a user's question matches a QUESTION in the knowledge base, respond with EXACTLY the corresponding ANSWER
+4. If information is not in the knowledge base, respond: "I don't have that information. Please contact library staff."
+5. Do not elaborate, explain, or add context beyond what is in the knowledge base
+
 ${assistant.systemPrompt}
 
-CRITICAL INSTRUCTION: You must ONLY use the information provided in the KNOWLEDGE BASE below to answer questions.
-- DO NOT use any external knowledge or information from your training data.
-- If the answer is not found in the KNOWLEDGE BASE, say: "I don't have information about that in my knowledge base. Please contact the library staff for assistance."
-- Never make up or guess information that is not explicitly stated in the KNOWLEDGE BASE.
-- For Q&A entries, match the user's question to the closest question in the knowledge base and provide the corresponding answer.
-
-=== KNOWLEDGE BASE START ===
-${contextText || "No documents in knowledge base yet."}
-=== KNOWLEDGE BASE END ===
-      `;
+=== KNOWLEDGE BASE ===
+${formattedContext || "Empty - no documents added yet."}
+=== END KNOWLEDGE BASE ===`;
 
       const history = await storage.getMessages(conversationId);
       // Format for Gemini: user/model roles
