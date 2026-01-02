@@ -205,11 +205,22 @@ export default function ChatInterfacePage() {
                         Assistant Avatar
                       </Label>
                       <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border overflow-hidden">
-                          {avatarImage ? (
-                            <img src={avatarImage} alt="Avatar" className="w-full h-full object-cover" />
-                          ) : (
-                            <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                        <div className="relative">
+                          <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border overflow-hidden">
+                            {avatarImage ? (
+                              <img src={avatarImage} alt="Avatar" className="w-full h-full object-cover" />
+                            ) : (
+                              <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                            )}
+                          </div>
+                          {avatarImage && (
+                            <button
+                              onClick={() => setAvatarImage(null)}
+                              className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90"
+                              data-testid="button-remove-avatar"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
                           )}
                         </div>
                         <div>
@@ -226,7 +237,7 @@ export default function ChatInterfacePage() {
                             onClick={() => avatarInputRef.current?.click()}
                             data-testid="button-change-image"
                           >
-                            Change Image
+                            {avatarImage ? "Change Image" : "Upload Image"}
                           </Button>
                           <p className="text-xs text-muted-foreground mt-1">
                             Recommended: Square PNG/JPG
