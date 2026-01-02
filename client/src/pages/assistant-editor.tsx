@@ -53,6 +53,16 @@ export default function AssistantEditor() {
   const footerText = config?.footerText || "";
   const showGeminiBranding = config?.showGeminiBranding !== false;
 
+  // Simple Markdown to HTML renderer
+  const renderMarkdown = (text: string): string => {
+    if (!text) return "";
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-primary underline">$1</a>')
+      .replace(/\n/g, '<br>');
+  };
+
   const createChatSession = async () => {
     try {
       const res = await fetch("/api/chat/session", {
@@ -335,7 +345,9 @@ export default function AssistantEditor() {
                   <span className="uppercase tracking-wide font-medium">Testing Environment</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {footerText && <span>{footerText}</span>}
+                  {footerText && (
+                    <span dangerouslySetInnerHTML={{ __html: renderMarkdown(footerText) }} />
+                  )}
                   {showGeminiBranding && <span>© 2026 ChatLib.de — Alexander Ananyev</span>}
                 </div>
               </div>

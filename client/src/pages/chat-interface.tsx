@@ -65,6 +65,36 @@ export default function ChatInterfacePage() {
   const [showGeminiBranding, setShowGeminiBranding] = useState(true);
   const [avatarImage, setAvatarImage] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const footerTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Helper to insert Markdown at cursor position
+  const insertMarkdown = (prefix: string, suffix: string = prefix) => {
+    const textarea = footerTextareaRef.current;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = footerText.substring(start, end);
+    const newText = footerText.substring(0, start) + prefix + selectedText + suffix + footerText.substring(end);
+    setFooterText(newText);
+    
+    // Set cursor position after insertion
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + prefix.length + selectedText.length + suffix.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
+  };
+
+  // Simple Markdown to HTML renderer (basic)
+  const renderMarkdown = (text: string): string => {
+    if (!text) return "";
+    return text
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener" class="text-primary underline">$1</a>')
+      .replace(/\n/g, '<br>');
+  };
 
   useEffect(() => {
     if (assistant) {
@@ -368,31 +398,40 @@ export default function ChatInterfacePage() {
                         Chat Footer
                       </Label>
                       <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7"
+                          onClick={() => insertMarkdown('**')}
+                          title="Bold (**text**)"
+                        >
                           <Bold className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7"
+                          onClick={() => insertMarkdown('*')}
+                          title="Italic (*text*)"
+                        >
                           <Italic className="w-3.5 h-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-7 w-7"
+                          onClick={() => insertMarkdown('[', '](https://)')}
+                          title="Link [text](url)"
+                        >
                           <LinkIcon className="w-3.5 h-3.5" />
-                        </Button>
-                        <div className="w-px h-4 bg-border mx-1" />
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <AlignLeft className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <AlignCenter className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7">
-                          <AlignRight className="w-3.5 h-3.5" />
                         </Button>
                       </div>
                     </div>
                     <Textarea
+                      ref={footerTextareaRef}
                       value={footerText}
                       onChange={(e) => setFooterText(e.target.value)}
-                      placeholder="Institutional copyright or contact links..."
+                      placeholder="Use Markdown: **bold**, *italic*, [link](url)"
                       className="min-h-[80px] resize-none"
                       data-testid="textarea-footer"
                     />
@@ -403,9 +442,12 @@ export default function ChatInterfacePage() {
                       <span className="w-2 h-2 rounded-full bg-green-500" />
                       Live Preview
                     </Label>
-                    <div className="p-4 bg-muted/30 rounded-lg min-h-[40px] text-sm text-muted-foreground">
-                      {footerText || "No footer text defined..."}
-                    </div>
+                    <div 
+                      className="p-4 bg-muted/30 rounded-lg min-h-[40px] text-sm text-muted-foreground"
+                      dangerouslySetInnerHTML={{ 
+                        __html: footerText ? renderMarkdown(footerText) : "No footer text defined..." 
+                      }}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
