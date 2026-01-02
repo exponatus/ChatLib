@@ -173,6 +173,7 @@ export async function registerRoutes(
         name: assistant.name,
         welcomeMessage: assistant.welcomeMessage,
         isPublished: assistant.isPublished,
+        coverImage: assistant.coverImage,
         deploymentConfig: assistant.deploymentConfig,
       });
     } catch (err) {

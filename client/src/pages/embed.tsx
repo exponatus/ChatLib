@@ -17,6 +17,7 @@ interface Assistant {
   name: string;
   welcomeMessage: string | null;
   isPublished: boolean;
+  coverImage: string | null;
   deploymentConfig: {
     theme?: string;
     font?: string;
@@ -170,6 +171,79 @@ export default function EmbedPage() {
     inputRef.current?.focus();
   };
 
+  // Extract config before conditional returns for hooks
+  const config = assistant?.deploymentConfig || {};
+  const suggestedPrompts = config.suggestedPrompts || [];
+  const selectedTheme = config.theme || 'material';
+  const selectedFont = config.font || 'Inter';
+  const avatarImage = assistant?.coverImage || null;
+
+  // Theme-specific styles
+  const themeStyles = {
+    material: {
+      container: "rounded-2xl",
+      header: "rounded-t-2xl",
+      message: "rounded-2xl",
+      userMessage: "bg-primary text-primary-foreground rounded-2xl",
+      assistantMessage: "bg-muted rounded-2xl",
+      input: "rounded-full",
+      button: "rounded-full",
+      avatar: "rounded-full",
+    },
+    classic: {
+      container: "rounded-none border-2",
+      header: "rounded-none",
+      message: "rounded-none",
+      userMessage: "bg-primary text-primary-foreground rounded-none",
+      assistantMessage: "bg-muted rounded-none border",
+      input: "rounded-none",
+      button: "rounded-none",
+      avatar: "rounded-none",
+    },
+    minimalist: {
+      container: "rounded-lg border",
+      header: "rounded-t-lg",
+      message: "rounded-lg",
+      userMessage: "bg-primary/90 text-primary-foreground rounded-lg",
+      assistantMessage: "bg-transparent border rounded-lg",
+      input: "rounded-lg",
+      button: "rounded-lg",
+      avatar: "rounded-lg",
+    },
+  };
+
+  const currentTheme = themeStyles[selectedTheme as keyof typeof themeStyles] || themeStyles.material;
+
+  // Font family mapping
+  const fontFamilies: Record<string, string> = {
+    'Inter': "'Inter', sans-serif",
+    'Roboto': "'Roboto', sans-serif",
+    'Open Sans': "'Open Sans', sans-serif",
+    'Montserrat': "'Montserrat', sans-serif",
+    'Playfair Display': "'Playfair Display', serif",
+    'Source Sans Pro': "'Source Sans Pro', sans-serif",
+  };
+
+  const fontFamily = fontFamilies[selectedFont] || fontFamilies['Inter'];
+
+  // Load Google Font dynamically - must be before conditional returns
+  useEffect(() => {
+    if (selectedFont && selectedFont !== 'Inter') {
+      const fontName = selectedFont.replace(/ /g, '+');
+      const linkId = 'dynamic-embed-font';
+      let linkEl = document.getElementById(linkId) as HTMLLinkElement;
+      
+      if (!linkEl) {
+        linkEl = document.createElement('link');
+        linkEl.id = linkId;
+        linkEl.rel = 'stylesheet';
+        document.head.appendChild(linkEl);
+      }
+      
+      linkEl.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@400;500;600;700&display=swap`;
+    }
+  }, [selectedFont]);
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
@@ -194,14 +268,15 @@ export default function EmbedPage() {
     );
   }
 
-  const config = assistant.deploymentConfig || {};
-  const suggestedPrompts = config.suggestedPrompts || [];
-
   return (
-    <div className="h-screen flex flex-col bg-background">
-      <div className="border-b p-4 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-          <Bot className="w-5 h-5 text-primary" />
+    <div className="h-screen flex flex-col bg-background" style={{ fontFamily }}>
+      <div className={`border-b p-4 flex items-center gap-3 ${currentTheme.header}`}>
+        <div className={`w-10 h-10 bg-primary/10 flex items-center justify-center overflow-hidden ${currentTheme.avatar}`}>
+          {avatarImage ? (
+            <img src={avatarImage} alt={assistant.name} className="w-full h-full object-cover" />
+          ) : (
+            <Bot className="w-5 h-5 text-primary" />
+          )}
         </div>
         <div>
           <h1 className="font-semibold">{assistant.name}</h1>
@@ -213,10 +288,14 @@ export default function EmbedPage() {
         <div className="max-w-2xl mx-auto space-y-4">
           {messages.length === 0 && assistant.welcomeMessage && (
             <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Bot className="w-4 h-4 text-primary" />
+              <div className={`w-8 h-8 bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden ${currentTheme.avatar}`}>
+                {avatarImage ? (
+                  <img src={avatarImage} alt={assistant.name} className="w-full h-full object-cover" />
+                ) : (
+                  <Bot className="w-4 h-4 text-primary" />
+                )}
               </div>
-              <div className="bg-muted rounded-lg p-3 max-w-[80%]">
+              <div className={`p-3 max-w-[80%] ${currentTheme.assistantMessage}`}>
                 <p className="text-sm">{assistant.welcomeMessage}</p>
               </div>
             </div>
@@ -244,21 +323,25 @@ export default function EmbedPage() {
               className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}
             >
               {msg.role === "model" && (
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Bot className="w-4 h-4 text-primary" />
+                <div className={`w-8 h-8 bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden ${currentTheme.avatar}`}>
+                  {avatarImage ? (
+                    <img src={avatarImage} alt={assistant.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <Bot className="w-4 h-4 text-primary" />
+                  )}
                 </div>
               )}
               <div
-                className={`rounded-lg p-3 max-w-[80%] ${
+                className={`p-3 max-w-[80%] ${
                   msg.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                    ? currentTheme.userMessage
+                    : currentTheme.assistantMessage
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
               </div>
               {msg.role === "user" && (
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                <div className={`w-8 h-8 bg-muted flex items-center justify-center shrink-0 ${currentTheme.avatar}`}>
                   <User className="w-4 h-4" />
                 </div>
               )}
@@ -267,10 +350,14 @@ export default function EmbedPage() {
 
           {isStreaming && messages[messages.length - 1]?.content === "" && (
             <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                <Bot className="w-4 h-4 text-primary" />
+              <div className={`w-8 h-8 bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden ${currentTheme.avatar}`}>
+                {avatarImage ? (
+                  <img src={avatarImage} alt={assistant.name} className="w-full h-full object-cover" />
+                ) : (
+                  <Bot className="w-4 h-4 text-primary" />
+                )}
               </div>
-              <div className="bg-muted rounded-lg p-3">
+              <div className={`p-3 ${currentTheme.assistantMessage}`}>
                 <Loader2 className="w-4 h-4 animate-spin" />
               </div>
             </div>
@@ -293,11 +380,13 @@ export default function EmbedPage() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Type your message..."
               disabled={isStreaming || !sessionId}
+              className={currentTheme.input}
               data-testid="input-chat-message"
             />
             <Button
               type="submit"
               disabled={!input.trim() || isStreaming || !sessionId}
+              className={currentTheme.button}
               data-testid="button-send-message"
             >
               <Send className="w-4 h-4" />
