@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -38,15 +38,72 @@ export default function DeployPage() {
   const assistantId = Number(id);
   
   const { data: assistant, isLoading } = useAssistant(assistantId);
-  const { mutateAsync: updateAssistant } = useUpdateAssistant();
+  const { mutateAsync: updateAssistant, isPending: isSaving } = useUpdateAssistant();
   const { toast } = useToast();
 
   const [isDomainsOpen, setIsDomainsOpen] = useState(true);
-  const [subDomain, setSubDomain] = useState("chat.yourlibrary.org");
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  
+  // SEO & Analytics settings from deploymentConfig
   const [googleAnalyticsId, setGoogleAnalyticsId] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [searchGrounding, setSearchGrounding] = useState(false);
+  const [customDomain, setCustomDomain] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
+
+  // Load existing values from deploymentConfig
+  useEffect(() => {
+    if (assistant?.deploymentConfig) {
+      const config = assistant.deploymentConfig as any;
+      setGoogleAnalyticsId(config.googleAnalyticsId || "");
+      setSeoDescription(config.seoDescription || "");
+      setSearchGrounding(config.searchGrounding || false);
+      setCustomDomain(config.customDomain || "");
+      setHasChanges(false);
+    }
+  }, [assistant]);
+
+  // Track changes
+  const handleGoogleAnalyticsChange = (value: string) => {
+    setGoogleAnalyticsId(value);
+    setHasChanges(true);
+  };
+
+  const handleSeoDescriptionChange = (value: string) => {
+    setSeoDescription(value);
+    setHasChanges(true);
+  };
+
+  const handleSearchGroundingChange = (value: boolean) => {
+    setSearchGrounding(value);
+    setHasChanges(true);
+  };
+
+  const handleCustomDomainChange = (value: string) => {
+    setCustomDomain(value);
+    setHasChanges(true);
+  };
+
+  // Save SEO & Analytics settings
+  const handleSaveSettings = async () => {
+    try {
+      const currentConfig = (assistant?.deploymentConfig as any) || {};
+      await updateAssistant({
+        id: assistantId,
+        deploymentConfig: {
+          ...currentConfig,
+          googleAnalyticsId,
+          seoDescription,
+          searchGrounding,
+          customDomain,
+        },
+      });
+      setHasChanges(false);
+      toast({ title: "Settings saved successfully" });
+    } catch (err) {
+      toast({ title: "Failed to save settings", variant: "destructive" });
+    }
+  };
 
   const isLive = assistant?.isPublished ?? false;
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://chatlib.de';
@@ -269,7 +326,7 @@ export default function DeployPage() {
                       </Label>
                       <Input 
                         value={googleAnalyticsId}
-                        onChange={(e) => setGoogleAnalyticsId(e.target.value)}
+                        onChange={(e) => handleGoogleAnalyticsChange(e.target.value)}
                         placeholder="G-XXXXXXXXXX"
                         data-testid="input-ga-id"
                       />
@@ -289,7 +346,7 @@ export default function DeployPage() {
                       </Label>
                       <Textarea 
                         value={seoDescription}
-                        onChange={(e) => setSeoDescription(e.target.value)}
+                        onChange={(e) => handleSeoDescriptionChange(e.target.value)}
                         placeholder="Institutional AI guide for patrons..."
                         className="resize-none h-20"
                         data-testid="input-seo-description"
@@ -310,10 +367,24 @@ export default function DeployPage() {
                     </div>
                     <Switch 
                       checked={searchGrounding}
-                      onCheckedChange={setSearchGrounding}
+                      onCheckedChange={handleSearchGroundingChange}
                       data-testid="switch-search-grounding"
                     />
                   </div>
+
+                  {/* Save Button */}
+                  {hasChanges && (
+                    <div className="flex justify-end">
+                      <Button 
+                        onClick={handleSaveSettings}
+                        disabled={isSaving}
+                        data-testid="button-save-seo"
+                      >
+                        {isSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Save Settings
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </TabsContent>
             </Tabs>
@@ -335,53 +406,95 @@ export default function DeployPage() {
                     <div className="space-y-4">
                       <div className="space-y-3">
                         <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                          Sub-Domain URL
+                          Custom Domain
                         </Label>
                         <div className="flex gap-2">
                           <Input 
-                            value={subDomain}
-                            onChange={(e) => setSubDomain(e.target.value)}
+                            value={customDomain}
+                            onChange={(e) => handleCustomDomainChange(e.target.value)}
                             placeholder="chat.yourlibrary.org"
                             data-testid="input-subdomain"
                           />
-                          <Button data-testid="button-link-domain">
-                            Link
+                          <Button 
+                            onClick={handleSaveSettings}
+                            disabled={isSaving || !customDomain}
+                            data-testid="button-link-domain"
+                          >
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
                           </Button>
                         </div>
+                        <p className="text-xs text-muted-foreground">
+                          Enter your custom domain (e.g., chat.library.org). DNS setup required.
+                        </p>
                       </div>
 
                       <div className="space-y-2 p-4 bg-muted/30 rounded-lg">
                         <div className="flex items-center gap-2">
                           <Globe className="w-4 h-4 text-muted-foreground" />
                           <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            DNS Config:
+                            DNS Configuration
                           </Label>
                         </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Add this CNAME record to your DNS provider:
+                        </p>
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">CNAME</span>
+                          <span className="text-muted-foreground">Type</span>
+                          <code className="text-xs bg-muted px-2 py-1 rounded font-mono">CNAME</code>
+                        </div>
+                        <div className="flex items-center justify-between text-sm mt-1">
+                          <span className="text-muted-foreground">Value</span>
                           <code className="text-xs bg-muted px-2 py-1 rounded font-mono">
-                            deploy.chatlib.de
+                            chatlib.de
                           </code>
                         </div>
                       </div>
                     </div>
 
-                    {/* Linked Hostnames */}
+                    {/* Current Domain Status */}
                     <div className="space-y-3">
                       <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        Linked Hostnames
+                        Domain Status
                       </Label>
                       <div className="space-y-2">
+                        {customDomain ? (
+                          <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                            <div>
+                              <p className="text-sm font-medium">{customDomain}</p>
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <span className="w-2 h-2 rounded-full bg-yellow-500" />
+                                <span className="text-xs text-yellow-600 font-medium">PENDING DNS</span>
+                              </div>
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-muted-foreground"
+                              onClick={() => copyToClipboard(customDomain, 'domain')}
+                            >
+                              {copiedField === 'domain' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="p-3 bg-muted/30 rounded-lg text-center">
+                            <p className="text-sm text-muted-foreground">No custom domain configured</p>
+                          </div>
+                        )}
                         <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                           <div>
-                            <p className="text-sm font-medium">chat.chatlib.de</p>
+                            <p className="text-sm font-medium">{shareUrl}</p>
                             <div className="flex items-center gap-1 mt-0.5">
                               <span className="w-2 h-2 rounded-full bg-green-500" />
-                              <span className="text-xs text-green-600 font-medium">ACTIVE</span>
+                              <span className="text-xs text-green-600 font-medium">DEFAULT</span>
                             </div>
                           </div>
-                          <Button variant="ghost" size="icon" className="text-muted-foreground">
-                            <Copy className="w-4 h-4" />
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-muted-foreground"
+                            onClick={() => copyToClipboard(shareUrl, 'default-url')}
+                          >
+                            {copiedField === 'default-url' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                           </Button>
                         </div>
                       </div>

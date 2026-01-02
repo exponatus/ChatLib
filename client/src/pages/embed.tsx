@@ -24,6 +24,8 @@ interface Assistant {
     footerText?: string;
     suggestedPrompts?: string[];
     showGeminiBranding?: boolean;
+    googleAnalyticsId?: string;
+    seoDescription?: string;
   } | null;
 }
 
@@ -68,6 +70,27 @@ export default function EmbedPage() {
       createSession.mutate();
     }
   }, [assistant, sessionId]);
+
+  // Load Google Analytics if configured
+  useEffect(() => {
+    if (assistant?.deploymentConfig?.googleAnalyticsId) {
+      const gaId = assistant.deploymentConfig.googleAnalyticsId;
+      // Add GA script
+      const script1 = document.createElement('script');
+      script1.async = true;
+      script1.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+      document.head.appendChild(script1);
+
+      const script2 = document.createElement('script');
+      script2.innerHTML = `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', '${gaId}');
+      `;
+      document.head.appendChild(script2);
+    }
+  }, [assistant]);
 
   useEffect(() => {
     if (scrollRef.current) {
