@@ -235,14 +235,38 @@ export async function registerRoutes(
       .filter(word => word.length > 2 && !stopWords.has(word));
   }
 
-  // Helper: Detect language based on character analysis
-  function detectLanguage(text: string): 'ru' | 'en' {
-    const cyrillicPattern = /[\u0400-\u04FF]/;
+  // Helper: Detect language based on character and word analysis
+  function detectLanguage(text: string): 'ru' | 'de' | 'en' {
+    const textLower = text.toLowerCase();
+    
+    // Check for Cyrillic (Russian)
     const cyrillicCount = (text.match(/[\u0400-\u04FF]/g) || []).length;
     const latinCount = (text.match(/[a-zA-Z]/g) || []).length;
     
-    // If more Cyrillic than Latin, it's Russian
     if (cyrillicCount > latinCount) return 'ru';
+    
+    // Check for German-specific patterns
+    const germanWords = [
+      'der', 'die', 'das', 'und', 'ist', 'sind', 'ein', 'eine', 'einer', 'einem',
+      'ich', 'du', 'er', 'sie', 'es', 'wir', 'ihr', 'haben', 'sein', 'werden',
+      'kann', 'muss', 'will', 'soll', 'möchte', 'darf', 'nicht', 'auch', 'noch',
+      'wie', 'was', 'wer', 'wo', 'wann', 'warum', 'welche', 'welcher', 'welches',
+      'bitte', 'danke', 'hallo', 'guten', 'morgen', 'tag', 'abend', 'nacht',
+      'bibliothek', 'buch', 'bücher', 'ausleihen', 'zurückgeben', 'verlängern',
+      'öffnungszeiten', 'mitglied', 'karte', 'gebühr', 'frist', 'suche', 'finden',
+      'gibt', 'gibt\'s', 'gehts', 'geht\'s', 'alles', 'gut', 'ja', 'nein'
+    ];
+    
+    // German umlauts and ß
+    const hasGermanChars = /[äöüßÄÖÜ]/.test(text);
+    
+    // Count German word matches
+    const words = textLower.split(/\s+/);
+    const germanMatches = words.filter(w => germanWords.includes(w.replace(/[?!.,;:'"]/g, ''))).length;
+    
+    // If has German chars or significant German word matches, it's German
+    if (hasGermanChars || germanMatches >= 1) return 'de';
+    
     return 'en';
   }
 
@@ -250,18 +274,22 @@ export async function registerRoutes(
   const i18n = {
     greeting: {
       ru: "Здравствуйте! Я библиотечный ассистент. Чем могу помочь вам сегодня?",
+      de: "Hallo! Ich bin der Bibliotheksassistent. Wie kann ich Ihnen heute helfen?",
       en: "Hello! I'm the library assistant. How can I help you today?"
     },
     offTopic: {
       ru: "Извините, я могу помочь только с вопросами о нашей библиотеке и её услугах. Если у вас есть вопросы о книгах, абонементах, мероприятиях или услугах библиотеки - я с радостью помогу!",
+      de: "Entschuldigung, ich kann nur bei Fragen zu unserer Bibliothek und deren Dienstleistungen helfen. Wenn Sie Fragen zu Büchern, Mitgliedschaften, Veranstaltungen oder Bibliotheksdiensten haben - ich helfe Ihnen gerne!",
       en: "Sorry, I can only help with questions about our library and its services. If you have questions about books, memberships, events, or library services - I'll be happy to help!"
     },
     noInfo: {
       ru: "К сожалению, у меня нет этой информации. Пожалуйста, обратитесь к сотрудникам библиотеки.",
+      de: "Leider habe ich diese Information nicht. Bitte wenden Sie sich an das Bibliothekspersonal.",
       en: "Unfortunately, I don't have this information. Please contact the library staff."
     },
     emptyKB: {
       ru: "База знаний пуста.",
+      de: "Die Wissensdatenbank ist leer.",
       en: "Knowledge base is empty."
     }
   };
@@ -377,7 +405,14 @@ export async function registerRoutes(
       const docs = await storage.getDocuments(assistant.id);
 
       // 3a. Handle simple greetings without AI
-      const greetings = ['привет', 'здравствуй', 'здравствуйте', 'добрый день', 'доброе утро', 'добрый вечер', 'hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'];
+      const greetings = [
+        // Russian
+        'привет', 'здравствуй', 'здравствуйте', 'добрый день', 'доброе утро', 'добрый вечер',
+        // English
+        'hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening',
+        // German
+        'hallo', 'guten tag', 'guten morgen', 'guten abend', 'grüß gott', 'servus', 'moin'
+      ];
       const contentLower = content.toLowerCase().trim();
       const isGreeting = greetings.some(g => contentLower === g || contentLower.startsWith(g + ' ') || contentLower.startsWith(g + ',') || contentLower.startsWith(g + '!'));
       
@@ -509,9 +544,12 @@ export async function registerRoutes(
       const noInfoMsg = i18n.noInfo[userLang];
       const offTopicMsg = i18n.offTopic[userLang];
       const emptyKBMsg = i18n.emptyKB[userLang];
-      const langInstruction = userLang === 'ru' 
-        ? 'ВАЖНО: Отвечай на русском языке, так как пользователь пишет по-русски.'
-        : 'IMPORTANT: Respond in English, as the user is writing in English.';
+      const langInstructions = {
+        ru: 'ВАЖНО: Отвечай на русском языке, так как пользователь пишет по-русски.',
+        de: 'WICHTIG: Antworte auf Deutsch, da der Benutzer auf Deutsch schreibt.',
+        en: 'IMPORTANT: Respond in English, as the user is writing in English.'
+      };
+      const langInstruction = langInstructions[userLang];
 
       const systemInstruction = `=== YOUR IDENTITY AND INSTRUCTIONS ===
 ${assistant.systemPrompt || 'You are a helpful library assistant.'}
