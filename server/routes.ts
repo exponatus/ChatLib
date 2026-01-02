@@ -324,6 +324,30 @@ export async function registerRoutes(
       // 3. Fetch documents for RAG
       const docs = await storage.getDocuments(assistant.id);
 
+      // 3a. Handle simple greetings without AI
+      const greetings = ['привет', 'здравствуй', 'здравствуйте', 'добрый день', 'доброе утро', 'добрый вечер', 'hi', 'hello', 'hey'];
+      const contentLower = content.toLowerCase().trim();
+      const isGreeting = greetings.some(g => contentLower === g || contentLower.startsWith(g + ' ') || contentLower.startsWith(g + ',') || contentLower.startsWith(g + '!'));
+      
+      if (isGreeting && contentLower.length < 50) {
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        
+        const greetingResponse = assistant.welcomeMessage || "Здравствуйте! Я библиотечный ассистент. Чем могу помочь вам сегодня?";
+        res.write(`data: ${JSON.stringify({ content: greetingResponse })}\n\n`);
+        
+        await storage.createMessage({
+          conversationId,
+          role: "model",
+          content: greetingResponse
+        });
+        
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+        return;
+      }
+
       // 4. DETERMINISTIC FAQ MATCHING - Check BEFORE calling AI
       const faqAnswer = findFaqMatch(content, docs);
       
@@ -348,6 +372,28 @@ export async function registerRoutes(
 
       // 5. KEYWORD-BASED DOCUMENT SCORING - Find most relevant documents
       const scoredDocs = scoreDocuments(content, docs);
+      
+      // 5a. OFF-TOPIC CHECK - If NO documents match, don't call AI at all
+      // This prevents the AI from using general knowledge
+      if (docs.length > 0 && scoredDocs.length === 0) {
+        // Has knowledge base but question doesn't match anything
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        
+        const offTopicResponse = "Извините, я могу помочь только с вопросами о нашей библиотеке и её услугах. Если у вас есть вопросы о книгах, абонементах, мероприятиях или услугах библиотеки - я с радостью помогу!";
+        res.write(`data: ${JSON.stringify({ content: offTopicResponse })}\n\n`);
+        
+        await storage.createMessage({
+          conversationId,
+          role: "model",
+          content: offTopicResponse
+        });
+        
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+        return;
+      }
       
       // If we have a high-confidence match (score >= 0.8), return snippet directly
       if (scoredDocs.length > 0 && scoredDocs[0].score >= 0.8) {
