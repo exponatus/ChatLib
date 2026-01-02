@@ -167,13 +167,38 @@ export async function registerRoutes(
     res.json(messages);
   });
 
-  // Helper: Normalize text for FAQ matching
+  // Helper: Normalize text for matching
   function normalizeText(text: string): string {
     return text
       .toLowerCase()
-      .replace(/[?!.,;:'"«»]/g, '')
+      .replace(/[?!.,;:'"«»\-\(\)\[\]]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  // Helper: Extract keywords (remove common stop words)
+  function extractKeywords(text: string): string[] {
+    const stopWords = new Set([
+      'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+      'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+      'may', 'might', 'must', 'shall', 'can', 'to', 'of', 'in', 'for', 'on', 'with',
+      'at', 'by', 'from', 'as', 'into', 'through', 'during', 'before', 'after',
+      'above', 'below', 'between', 'under', 'again', 'further', 'then', 'once',
+      'here', 'there', 'when', 'where', 'why', 'how', 'all', 'each', 'few', 'more',
+      'most', 'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same',
+      'so', 'than', 'too', 'very', 'just', 'and', 'but', 'if', 'or', 'because',
+      'what', 'which', 'who', 'whom', 'this', 'that', 'these', 'those', 'am', 'it',
+      // Russian stop words
+      'и', 'в', 'на', 'с', 'по', 'для', 'как', 'что', 'это', 'он', 'она', 'они',
+      'мы', 'вы', 'я', 'ты', 'его', 'её', 'их', 'мой', 'твой', 'наш', 'ваш',
+      'из', 'за', 'от', 'до', 'при', 'над', 'под', 'про', 'без', 'через',
+      'не', 'да', 'нет', 'или', 'но', 'а', 'же', 'ли', 'бы', 'ещё', 'уже',
+      'где', 'когда', 'кто', 'чем', 'там', 'тут', 'здесь', 'так', 'очень'
+    ]);
+    
+    const normalized = normalizeText(text);
+    return normalized.split(' ')
+      .filter(word => word.length > 2 && !stopWords.has(word));
   }
 
   // Helper: Find matching FAQ entry - exact match only
@@ -195,6 +220,72 @@ export async function registerRoutes(
     }
     
     return null;
+  }
+
+  // Helper: Score and rank documents by keyword relevance
+  interface ScoredDoc {
+    doc: any;
+    score: number;
+    matchedKeywords: string[];
+  }
+
+  function scoreDocuments(query: string, docs: any[]): ScoredDoc[] {
+    const queryKeywords = extractKeywords(query);
+    if (queryKeywords.length === 0) return [];
+
+    const scored: ScoredDoc[] = [];
+
+    for (const doc of docs) {
+      // Skip FAQ entries - handled separately
+      if (doc.sourceType === 'faq') continue;
+
+      // Extract document words as a Set for word-boundary matching
+      const docWords = new Set(extractKeywords(doc.content || ''));
+      const matchedKeywords: string[] = [];
+
+      for (const keyword of queryKeywords) {
+        // Only match if keyword is a complete word in the document
+        if (docWords.has(keyword)) {
+          matchedKeywords.push(keyword);
+        }
+      }
+
+      // Require at least 2 matched keywords for scoring
+      if (matchedKeywords.length >= 2) {
+        // Score = percentage of query keywords found in document
+        const score = matchedKeywords.length / queryKeywords.length;
+        scored.push({ doc, score, matchedKeywords });
+      }
+    }
+
+    // Sort by score descending
+    return scored.sort((a, b) => b.score - a.score);
+  }
+
+  // Helper: Extract relevant snippet from document
+  function extractSnippet(content: string, keywords: string[], maxLength: number = 500): string {
+    const normalized = content.toLowerCase();
+    
+    // Find first keyword occurrence
+    let bestPos = -1;
+    for (const keyword of keywords) {
+      const pos = normalized.indexOf(keyword.toLowerCase());
+      if (pos !== -1 && (bestPos === -1 || pos < bestPos)) {
+        bestPos = pos;
+      }
+    }
+
+    if (bestPos === -1) return content.slice(0, maxLength);
+
+    // Extract snippet around the keyword
+    const start = Math.max(0, bestPos - 100);
+    const end = Math.min(content.length, bestPos + maxLength - 100);
+    let snippet = content.slice(start, end);
+
+    if (start > 0) snippet = '...' + snippet;
+    if (end < content.length) snippet = snippet + '...';
+
+    return snippet;
   }
 
   // RAG Chat Endpoint
@@ -242,14 +333,63 @@ export async function registerRoutes(
         return;
       }
 
-      // 5. No FAQ match - Use AI with knowledge base context
-      const formattedContext = docs.map(d => {
-        const meta = d.metadata as { question?: string; response?: string } | null;
-        if (d.sourceType === 'faq' && meta?.question && meta?.response) {
-          return `Q: ${meta.question}\nA: ${meta.response}`;
+      // 5. KEYWORD-BASED DOCUMENT SCORING - Find most relevant documents
+      const scoredDocs = scoreDocuments(content, docs);
+      
+      // If we have a high-confidence match (score >= 0.8), return snippet directly
+      if (scoredDocs.length > 0 && scoredDocs[0].score >= 0.8) {
+        const topDoc = scoredDocs[0];
+        const snippet = extractSnippet(topDoc.doc.content, topDoc.matchedKeywords, 800);
+        
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        
+        const directAnswer = `Based on "${topDoc.doc.title}":\n\n${snippet}`;
+        res.write(`data: ${JSON.stringify({ content: directAnswer })}\n\n`);
+        
+        await storage.createMessage({
+          conversationId,
+          role: "model",
+          content: directAnswer
+        });
+        
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+        return;
+      }
+
+      // 6. Build context - prioritize relevant docs, include all FAQ entries
+      const contextParts: string[] = [];
+      
+      // Add top 3 relevant documents first
+      const topDocs = scoredDocs.slice(0, 3);
+      for (const { doc, matchedKeywords } of topDocs) {
+        const snippet = extractSnippet(doc.content, matchedKeywords, 600);
+        contextParts.push(`[${doc.title}]\n${snippet}`);
+      }
+      
+      // Add FAQ entries
+      for (const doc of docs) {
+        if (doc.sourceType === 'faq') {
+          const meta = doc.metadata as { question?: string; response?: string } | null;
+          if (meta?.question && meta?.response) {
+            contextParts.push(`Q: ${meta.question}\nA: ${meta.response}`);
+          }
         }
-        return `[${d.title}]\n${d.content}`;
-      }).join("\n\n");
+      }
+      
+      // Add remaining docs if space allows (up to 5 total)
+      const remainingDocs = docs.filter(d => 
+        d.sourceType !== 'faq' && 
+        !topDocs.some(td => td.doc.id === d.id)
+      ).slice(0, 2);
+      
+      for (const doc of remainingDocs) {
+        contextParts.push(`[${doc.title}]\n${doc.content?.slice(0, 400) || ''}`);
+      }
+
+      const formattedContext = contextParts.join("\n\n---\n\n");
 
       const systemInstruction = `You are a library assistant. Answer questions using ONLY the knowledge base below.
 If the answer is not in the knowledge base, say: "I don't have that information. Please contact library staff."
