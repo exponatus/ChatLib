@@ -18,7 +18,8 @@ import {
   ChevronDown,
   ExternalLink,
   Sparkles,
-  RefreshCw
+  RefreshCw,
+  CheckCircle2
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import {
@@ -26,6 +27,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export default function AIWorkspacePage() {
   const { id } = useParams();
@@ -40,6 +48,7 @@ export default function AIWorkspacePage() {
   const [reasoningDepth, setReasoningDepth] = useState([0]);
   const [searchGrounding, setSearchGrounding] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [showApiKeyDialog, setShowApiKeyDialog] = useState(false);
 
   useEffect(() => {
     if (assistant) {
@@ -93,7 +102,12 @@ export default function AIWorkspacePage() {
                         Status: <span className="text-green-600 font-semibold">CONNECTED</span>
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" data-testid="button-select-api-key">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowApiKeyDialog(true)}
+                      data-testid="button-select-api-key"
+                    >
                       <Key className="w-4 h-4 mr-2" />
                       Select API Key
                     </Button>
@@ -278,6 +292,39 @@ export default function AIWorkspacePage() {
           </div>
         </div>
       </div>
+
+      {/* API Key Dialog */}
+      <Dialog open={showApiKeyDialog} onOpenChange={setShowApiKeyDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-500" />
+              API Key Configuration
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-4">
+              <p>
+                Your ChatLib application is connected to <strong>Replit AI Integrations</strong>, which automatically manages the Google Gemini API key for you.
+              </p>
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm text-green-800 font-medium">
+                  Status: Connected
+                </p>
+                <p className="text-xs text-green-700 mt-1">
+                  No additional configuration required. Your API access is secure and ready to use.
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                API keys are managed securely through Replit's infrastructure. Your data remains private and is never used to train external models.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end pt-4">
+            <Button onClick={() => setShowApiKeyDialog(false)}>
+              Got it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </LayoutShell>
   );
 }
