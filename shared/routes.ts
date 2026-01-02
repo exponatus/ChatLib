@@ -17,6 +17,10 @@ export const errorSchemas = {
   }),
 };
 
+// Create input schema without userId (set by backend from auth)
+const createAssistantInput = insertAssistantSchema.omit({ userId: true });
+const updateAssistantInput = createAssistantInput.partial();
+
 export const api = {
   assistants: {
     list: {
@@ -39,7 +43,7 @@ export const api = {
     create: {
       method: 'POST' as const,
       path: '/api/assistants',
-      input: insertAssistantSchema,
+      input: createAssistantInput,
       responses: {
         201: z.custom<typeof assistants.$inferSelect>(),
         400: errorSchemas.validation,
@@ -49,7 +53,7 @@ export const api = {
     update: {
       method: 'PUT' as const,
       path: '/api/assistants/:id',
-      input: insertAssistantSchema.partial(),
+      input: updateAssistantInput,
       responses: {
         200: z.custom<typeof assistants.$inferSelect>(),
         400: errorSchemas.validation,
