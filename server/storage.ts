@@ -88,7 +88,10 @@ export class DatabaseStorage implements IStorage {
     const defaultDemo = {
       name: "Library Assistant",
       description: "Demo assistant for testing library services",
-      systemPrompt: "You are a helpful library assistant. Help patrons with book recommendations, library policies, borrowing information, and research assistance.",
+      systemPrompt: `You are a virtual library assistant.
+Your role is to help library patrons by answering questions using only the provided library data.
+Be clear, polite, and accurate.
+If the information is not available in the sources, say so and suggest contacting the library staff.`,
       welcomeMessage: "Hello! I'm here to help you with library services, borrowing rules, events, and digital resources. How can I assist you today?",
       isDemo: true,
       userId,
