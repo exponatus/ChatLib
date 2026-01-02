@@ -95,12 +95,12 @@ export function AssistantCard({ assistant }: { assistant: Assistant }) {
     <>
       <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 border-border/60">
         {/* Cover Image Area */}
-        <div className={`relative h-32 flex items-center justify-center ${getGradient(assistant.id)}`}>
+        <div className={`relative h-32 flex items-center justify-center ${assistant.coverImage ? 'bg-white' : getGradient(assistant.id)}`}>
           {assistant.coverImage && (
             <img 
               src={assistant.coverImage} 
               alt={assistant.name}
-              className="max-w-full max-h-full object-contain p-2"
+              className="max-w-full max-h-full object-contain p-3"
             />
           )}
 
