@@ -411,7 +411,26 @@ export default function AssistantEditor() {
                   {footerText && (
                     <span dangerouslySetInnerHTML={{ __html: renderMarkdown(footerText) }} />
                   )}
-                  {showGeminiBranding && <span>© 2026 ChatLib.de — Alexander Ananyev</span>}
+                  {showGeminiBranding && (
+                    <span className="flex items-center gap-1">
+                      ChatLib.de • Powered by 
+                      <svg className="w-4 h-4 inline-block ml-0.5" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z" fill="url(#gemini-grad1)"/>
+                        <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#gemini-grad2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        <defs>
+                          <linearGradient id="gemini-grad1" x1="2" y1="7" x2="22" y2="7">
+                            <stop stopColor="#4285F4"/>
+                            <stop offset="1" stopColor="#8E44AD"/>
+                          </linearGradient>
+                          <linearGradient id="gemini-grad2" x1="2" y1="14.5" x2="22" y2="14.5">
+                            <stop stopColor="#4285F4"/>
+                            <stop offset="1" stopColor="#8E44AD"/>
+                          </linearGradient>
+                        </defs>
+                      </svg>
+                      <span className="font-medium">Gemini</span>
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

@@ -309,8 +309,23 @@ export default function EmbedPage() {
             </p>
           )}
           {config.showGeminiBranding !== false && (
-            <p className="text-xs text-muted-foreground text-center mt-1">
-              Powered by ChatLib
+            <p className="text-xs text-muted-foreground text-center mt-1 flex items-center justify-center gap-1">
+              ChatLib.de • Powered by 
+              <svg className="w-4 h-4 inline-block" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" fill="url(#gemini-embed-grad1)"/>
+                <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#gemini-embed-grad2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <defs>
+                  <linearGradient id="gemini-embed-grad1" x1="2" y1="7" x2="22" y2="7">
+                    <stop stopColor="#4285F4"/>
+                    <stop offset="1" stopColor="#8E44AD"/>
+                  </linearGradient>
+                  <linearGradient id="gemini-embed-grad2" x1="2" y1="14.5" x2="22" y2="14.5">
+                    <stop stopColor="#4285F4"/>
+                    <stop offset="1" stopColor="#8E44AD"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <span className="font-medium">Gemini</span>
             </p>
           )}
         </div>
