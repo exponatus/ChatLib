@@ -40,6 +40,12 @@ export const assistants = pgTable("assistants", {
     sexualFilter?: string;
     dangerousFilter?: string;
     sessionOnlyStorage?: boolean;
+    // Rate limiting
+    rateLimitEnabled?: boolean;
+    rateLimitCount?: number; // Max questions
+    rateLimitPeriod?: number; // Period in minutes
+    // Caching
+    responseCacheEnabled?: boolean;
   }>(),
   lastTrainedAt: timestamp("last_trained_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -106,10 +112,35 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
 }));
 
+// === RESPONSE CACHE (for cost optimization) ===
+export const responseCache = pgTable("response_cache", {
+  id: serial("id").primaryKey(),
+  assistantId: integer("assistant_id").notNull().references(() => assistants.id, { onDelete: "cascade" }),
+  questionHash: text("question_hash").notNull(), // MD5 hash of normalized question
+  question: text("question").notNull(), // Original question
+  response: text("response").notNull(), // Cached AI response
+  hitCount: integer("hit_count").default(1).notNull(), // How many times this was used
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  lastUsedAt: timestamp("last_used_at").defaultNow().notNull(),
+});
+
+export const responseCacheRelations = relations(responseCache, ({ one }) => ({
+  assistant: one(assistants, {
+    fields: [responseCache.assistantId],
+    references: [assistants.id],
+  }),
+}));
+
 // === ZOD SCHEMAS ===
 export const insertAssistantSchema = createInsertSchema(assistants).omit({ 
   id: true, 
   createdAt: true 
+});
+
+export const insertResponseCacheSchema = createInsertSchema(responseCache).omit({
+  id: true,
+  createdAt: true,
+  lastUsedAt: true,
 });
 
 export const insertDocumentSchema = createInsertSchema(documents).omit({ 
@@ -134,3 +165,5 @@ export type Document = typeof documents.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type Conversation = typeof conversations.$inferSelect;
 export type Message = typeof messages.$inferSelect;
+export type ResponseCache = typeof responseCache.$inferSelect;
+export type InsertResponseCache = z.infer<typeof insertResponseCacheSchema>;
