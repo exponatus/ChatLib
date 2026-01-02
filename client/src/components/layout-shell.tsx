@@ -1,7 +1,6 @@
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { 
-  Library, 
   LogOut, 
   Play,
   Cpu,
@@ -15,6 +14,7 @@ import {
   Settings,
   Menu
 } from "lucide-react";
+import chatLibLogo from "@assets/chatlib_logo_1767359875781.png";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -45,9 +45,7 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
     <div className="flex flex-col h-full">
       <div className="px-6 py-6">
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="p-2 bg-primary/10 rounded-xl group-hover:bg-primary/20 transition-colors">
-            <Library className="w-6 h-6 text-primary" />
-          </div>
+          <img src={chatLibLogo} alt="ChatLib" className="w-10 h-10 rounded-xl" />
           <span className="font-display font-bold text-xl tracking-tight">ChatLib</span>
         </Link>
       </div>

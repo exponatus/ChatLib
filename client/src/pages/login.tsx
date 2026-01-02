@@ -1,8 +1,9 @@
 import { useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Library, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useLocation } from "wouter";
+import chatLibLogo from "@assets/chatlib_logo_1767359875781.png";
 
 export default function LoginPage() {
   const { user, isLoading } = useAuth();
@@ -20,9 +21,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full text-center space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="flex justify-center mb-6">
-          <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center rotate-3 shadow-lg shadow-primary/10">
-            <Library className="w-10 h-10 text-primary" />
-          </div>
+          <img src={chatLibLogo} alt="ChatLib" className="w-20 h-20 rounded-3xl rotate-3 shadow-lg shadow-primary/10" />
         </div>
         
         <div className="space-y-2">
