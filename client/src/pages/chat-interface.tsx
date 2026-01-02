@@ -23,7 +23,7 @@ import {
   Sparkles,
   Check
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Collapsible,
   CollapsibleContent,
@@ -63,13 +63,29 @@ export default function ChatInterfacePage() {
   const [newPrompt, setNewPrompt] = useState("");
   const [footerText, setFooterText] = useState("");
   const [showGeminiBranding, setShowGeminiBranding] = useState(true);
+  const [avatarImage, setAvatarImage] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (assistant) {
       setAssistantName(assistant.name || "Library Assistant");
       setGreetingMessage(assistant.welcomeMessage || "Hello! I'm here to help you with library services, borrowing rules, events, and digital resources. How can I assist you today?");
+      setAvatarImage(assistant.coverImage || null);
     }
   }, [assistant]);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const imageData = reader.result as string;
+        setAvatarImage(imageData);
+        await updateAssistant({ id: assistantId, coverImage: imageData });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const addPrompt = () => {
     if (newPrompt.trim() && !suggestedPrompts.includes(newPrompt.trim())) {
@@ -129,11 +145,27 @@ export default function ChatInterfacePage() {
                         Assistant Avatar
                       </Label>
                       <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border">
-                          <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center border-2 border-dashed border-border overflow-hidden">
+                          {avatarImage ? (
+                            <img src={avatarImage} alt="Avatar" className="w-full h-full object-cover" />
+                          ) : (
+                            <ImageIcon className="w-6 h-6 text-muted-foreground" />
+                          )}
                         </div>
                         <div>
-                          <Button variant="outline" size="sm" data-testid="button-change-image">
+                          <input
+                            ref={avatarInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleAvatarChange}
+                            className="hidden"
+                          />
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => avatarInputRef.current?.click()}
+                            data-testid="button-change-image"
+                          >
                             Change Image
                           </Button>
                           <p className="text-xs text-muted-foreground mt-1">
