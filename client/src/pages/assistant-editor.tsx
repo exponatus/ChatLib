@@ -41,7 +41,7 @@ export default function AssistantEditor() {
 
   const createChatSession = async () => {
     try {
-      const res = await fetch("/api/chat/sessions", {
+      const res = await fetch("/api/chat/session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ assistantId }),
@@ -102,7 +102,7 @@ export default function AssistantEditor() {
         }
       }
 
-      const res = await fetch(`/api/chat/sessions/${sessionId}/messages`, {
+      const res = await fetch(`/api/chat/session/${sessionId}/message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content: messageText }),
