@@ -22,6 +22,7 @@ export const assistants = pgTable("assistants", {
     primaryColor?: string;
     allowedDomains?: string[];
   }>(),
+  lastTrainedAt: timestamp("last_trained_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

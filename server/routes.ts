@@ -92,6 +92,21 @@ export async function registerRoutes(
     res.status(204).send();
   });
 
+  // Retrain assistant - updates lastTrainedAt timestamp
+  app.post("/api/assistants/:id/retrain", isAuthenticated, async (req: any, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getAssistant(id);
+      if (!existing) return res.status(404).json({ message: "Assistant not found" });
+      if (existing.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
+
+      const updated = await storage.updateAssistant(id, { lastTrainedAt: new Date() });
+      res.json({ success: true, lastTrainedAt: updated?.lastTrainedAt });
+    } catch (err) {
+      res.status(500).json({ message: "Error retraining assistant" });
+    }
+  });
+
   // === Documents Routes ===
   app.get(api.documents.list.path, isAuthenticated, async (req: any, res) => {
     const assistantId = parseInt(req.params.assistantId);
