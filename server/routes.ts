@@ -201,7 +201,7 @@ export async function registerRoutes(
       let fullResponse = "";
 
       for await (const chunk of stream) {
-        const text = chunk.text();
+        const text = chunk.text || "";
         if (text) {
           fullResponse += text;
           res.write(`data: ${JSON.stringify({ content: text })}\n\n`);
