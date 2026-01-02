@@ -38,6 +38,7 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
   const isAIWorkspacePage = location.includes("/ai-workspace");
   const isChatInterfacePage = location.includes("/chat-interface");
   const isSecurityPage = location.includes("/security");
+  const isDeployPage = location.includes("/deploy");
   const basePath = assistantId ? `/assistant/${assistantId}` : '';
 
   const NavContent = () => (
@@ -102,9 +103,12 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
               <Shield className="w-4 h-4" />
               Security
             </Link>
-            <Link href={`/assistant/${assistantId}?tab=deploy`} className={`
+            <Link href={`/assistant/${assistantId}/deploy`} className={`
               flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition-all duration-200
-              text-muted-foreground hover:bg-muted hover:text-foreground
+              ${isDeployPage 
+                ? "bg-primary text-primary-foreground" 
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }
             `}>
               <Rocket className="w-4 h-4" />
               Deploy
