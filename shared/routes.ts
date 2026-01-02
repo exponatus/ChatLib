@@ -19,7 +19,12 @@ export const errorSchemas = {
 
 // Create input schema without userId (set by backend from auth)
 const createAssistantInput = insertAssistantSchema.omit({ userId: true });
-const updateAssistantInput = createAssistantInput.partial();
+// Allow null for nullable fields in updates
+const updateAssistantInput = createAssistantInput.partial().extend({
+  coverImage: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
+  welcomeMessage: z.string().nullable().optional(),
+});
 
 export const api = {
   assistants: {
