@@ -32,6 +32,7 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
 
   const isAssistantPage = location.startsWith("/assistant/");
   const isFilesPage = location.includes("/files");
+  const isTextPage = location.includes("/text");
   const basePath = assistantId ? `/assistant/${assistantId}` : '';
 
   const NavContent = () => (
@@ -111,9 +112,12 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
               <FileText className="w-4 h-4" />
               Files
             </Link>
-            <Link href={`/assistant/${assistantId}?tab=text`} className={`
+            <Link href={`/assistant/${assistantId}/text`} className={`
               flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition-all duration-200
-              text-muted-foreground hover:bg-muted hover:text-foreground
+              ${isTextPage 
+                ? "bg-primary text-primary-foreground" 
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }
             `}>
               <Type className="w-4 h-4" />
               Text
