@@ -33,6 +33,8 @@ export async function registerRoutes(
   // === Assistants Routes ===
   app.get(api.assistants.list.path, isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
+    // Ensure demo assistant exists and is reset to defaults
+    await storage.ensureDemoAssistant(userId);
     const assistants = await storage.getAssistants(userId);
     res.json(assistants);
   });
@@ -82,6 +84,7 @@ export async function registerRoutes(
     const existing = await storage.getAssistant(id);
     if (!existing) return res.status(404).json({ message: "Assistant not found" });
     if (existing.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
+    if (existing.isDemo) return res.status(403).json({ message: "Demo assistant cannot be deleted" });
 
     await storage.deleteAssistant(id);
     res.status(204).send();

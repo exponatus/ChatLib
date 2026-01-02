@@ -19,6 +19,7 @@ export interface IStorage {
   createAssistant(assistant: InsertAssistant): Promise<Assistant>;
   updateAssistant(id: number, assistant: Partial<InsertAssistant>): Promise<Assistant>;
   deleteAssistant(id: number): Promise<void>;
+  ensureDemoAssistant(userId: string): Promise<Assistant>;
 
   // Documents
   getDocuments(assistantId: number): Promise<Document[]>;
@@ -71,6 +72,29 @@ export class DatabaseStorage implements IStorage {
 
   async deleteAssistant(id: number): Promise<void> {
     await db.delete(assistants).where(eq(assistants.id, id));
+  }
+
+  async ensureDemoAssistant(userId: string): Promise<Assistant> {
+    const defaultDemo = {
+      name: "Library Assistant",
+      description: "Demo assistant for testing library services",
+      systemPrompt: "You are a helpful library assistant. Help patrons with book recommendations, library policies, borrowing information, and research assistance.",
+      welcomeMessage: "Hello! I'm here to help you with library services, borrowing rules, events, and digital resources. How can I assist you today?",
+      isDemo: true,
+      userId,
+    };
+
+    // Check if demo already exists
+    const existingAssistants = await this.getAssistants(userId);
+    const demoAssistant = existingAssistants.find(a => a.isDemo);
+
+    if (demoAssistant) {
+      // Reset demo to default values
+      return await this.updateAssistant(demoAssistant.id, defaultDemo);
+    }
+
+    // Create new demo assistant
+    return await this.createAssistant(defaultDemo);
   }
 
   // Documents
