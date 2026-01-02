@@ -86,7 +86,7 @@ export default function AssistantEditor() {
   }
 
   return (
-    <LayoutShell>
+    <LayoutShell assistantId={assistantId}>
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/">
