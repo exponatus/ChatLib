@@ -215,7 +215,10 @@ export default function ChatInterfacePage() {
                           </div>
                           {avatarImage && (
                             <button
-                              onClick={() => setAvatarImage(null)}
+                              onClick={async () => {
+                                setAvatarImage(null);
+                                await updateAssistant({ id: assistantId, coverImage: null });
+                              }}
                               className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center hover:bg-destructive/90"
                               data-testid="button-remove-avatar"
                             >
