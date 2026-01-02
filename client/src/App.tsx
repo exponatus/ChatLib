@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import AssistantEditor from "@/pages/assistant-editor";
+import FilesPage from "@/pages/files";
 import LoginPage from "@/pages/login";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
@@ -40,6 +41,10 @@ function Router() {
       
       <Route path="/assistant/:id">
         {() => <ProtectedRoute component={AssistantEditor} />}
+      </Route>
+      
+      <Route path="/assistant/:id/files">
+        {() => <ProtectedRoute component={FilesPage} />}
       </Route>
       
       <Route component={NotFound} />

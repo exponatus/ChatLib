@@ -31,6 +31,8 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const isAssistantPage = location.startsWith("/assistant/");
+  const isFilesPage = location.includes("/files");
+  const basePath = assistantId ? `/assistant/${assistantId}` : '';
 
   const NavContent = () => (
     <div className="flex flex-col h-full">
@@ -99,9 +101,12 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
                 Knowledge Base
               </p>
             </div>
-            <Link href={`/assistant/${assistantId}?tab=files`} className={`
+            <Link href={`/assistant/${assistantId}/files`} className={`
               flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition-all duration-200
-              text-muted-foreground hover:bg-muted hover:text-foreground
+              ${isFilesPage 
+                ? "bg-primary text-primary-foreground" 
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }
             `}>
               <FileText className="w-4 h-4" />
               Files
