@@ -94,17 +94,18 @@ export function AssistantCard({ assistant }: { assistant: Assistant }) {
   return (
     <>
       <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 border-border/60">
-        {/* Cover Image Area */}
-        <div className={`relative h-32 flex items-center justify-center ${assistant.coverImage ? 'bg-white' : getGradient(assistant.id)}`}>
-          {assistant.coverImage && (
-            <img 
-              src={assistant.coverImage} 
-              alt={assistant.name}
-              className="max-w-full max-h-full object-contain p-3"
-            />
-          )}
+        {/* Cover Image Area - Clickable */}
+        <Link href={`/assistant/${assistant.id}`} className="block">
+          <div className={`relative h-32 flex items-center justify-center cursor-pointer ${assistant.coverImage ? 'bg-white' : getGradient(assistant.id)}`}>
+            {assistant.coverImage && (
+              <img 
+                src={assistant.coverImage} 
+                alt={assistant.name}
+                className="max-w-full max-h-full object-contain p-3"
+              />
+            )}
 
-          {/* Badges */}
+            {/* Badges */}
           <div className="absolute top-3 left-3 flex gap-2">
             {assistant.isDemo && (
               <Badge className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5">
@@ -125,45 +126,48 @@ export function AssistantCard({ assistant }: { assistant: Assistant }) {
             )}
           </div>
 
-          {/* Menu Button */}
-          <div className="absolute top-3 right-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 bg-white/80 hover:bg-white"
-                  data-testid={`button-menu-${assistant.id}`}
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => setShowRenameDialog(true)}>
-                  <Pencil className="w-4 h-4 mr-2" />
-                  Rename
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
-                  <ImageIcon className="w-4 h-4 mr-2" />
-                  Change cover
-                </DropdownMenuItem>
-                {assistant.coverImage && (
-                  <DropdownMenuItem onClick={handleRemoveImage}>
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    Remove image
-                  </DropdownMenuItem>
-                )}
-                {!assistant.isDemo && (
-                  <DropdownMenuItem 
-                    className="text-destructive focus:text-destructive"
-                    onSelect={() => setShowDeleteDialog(true)}
-                  >
-                    Delete
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
+        </Link>
+
+        {/* Menu Button - Outside Link to prevent navigation on click */}
+        <div className="absolute top-3 right-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 bg-white/80 hover:bg-white"
+                data-testid={`button-menu-${assistant.id}`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setShowRenameDialog(true)}>
+                <Pencil className="w-4 h-4 mr-2" />
+                Rename
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                <ImageIcon className="w-4 h-4 mr-2" />
+                Change cover
+              </DropdownMenuItem>
+              {assistant.coverImage && (
+                <DropdownMenuItem onClick={handleRemoveImage}>
+                  <RotateCcw className="w-4 h-4 mr-2" />
+                  Remove image
+                </DropdownMenuItem>
+              )}
+              {!assistant.isDemo && (
+                <DropdownMenuItem 
+                  className="text-destructive focus:text-destructive"
+                  onSelect={() => setShowDeleteDialog(true)}
+                >
+                  Delete
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <CardContent className="p-4">
