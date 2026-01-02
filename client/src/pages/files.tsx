@@ -1,6 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { LayoutShell } from "@/components/layout-shell";
-import { useAssistant, useDocuments, useCreateDocument, useDeleteDocument } from "@/hooks/use-assistants";
+import { useAssistant, useDocuments, useCreateDocument, useDeleteDocument, useRetrainAssistant } from "@/hooks/use-assistants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,7 @@ export default function FilesPage() {
   const { data: documents, isLoading: isLoadingDocs } = useDocuments(assistantId);
   const { mutateAsync: createDocument, isPending: isUploading } = useCreateDocument();
   const { mutateAsync: deleteDocument } = useDeleteDocument();
+  const { mutateAsync: retrainAssistant, isPending: isRetraining } = useRetrainAssistant();
 
   const [isAddOpen, setIsAddOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -346,9 +347,14 @@ export default function FilesPage() {
                   </span>
                 </div>
 
-                <Button className="w-full bg-primary hover:bg-primary/90" data-testid="button-retrain">
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Retrain assistant
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90" 
+                  data-testid="button-retrain"
+                  onClick={() => retrainAssistant(assistantId)}
+                  disabled={isRetraining}
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${isRetraining ? 'animate-spin' : ''}`} />
+                  {isRetraining ? 'Retraining...' : 'Retrain assistant'}
                 </Button>
               </CardContent>
             </Card>

@@ -200,3 +200,33 @@ export function useDeleteDocument() {
     },
   });
 }
+
+export function useRetrainAssistant() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/assistants/${id}/retrain`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to retrain assistant");
+      return res.json();
+    },
+    onSuccess: (_, id) => {
+      queryClient.invalidateQueries({ queryKey: [api.assistants.get.path, id] });
+      toast({
+        title: "Retraining Complete",
+        description: "Your assistant has been updated with the latest knowledge base.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
