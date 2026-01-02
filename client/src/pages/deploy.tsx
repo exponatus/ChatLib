@@ -49,8 +49,9 @@ export default function DeployPage() {
   const [searchGrounding, setSearchGrounding] = useState(false);
 
   const isLive = assistant?.isPublished ?? false;
-  const shareUrl = `https://chatlib.app/c/${assistantId}?embed=true`;
-  const embedCode = `<iframe src="${shareUrl}" width="100%" height="600" frameborder="0"></iframe>`;
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://chatlib.de';
+  const shareUrl = `${baseUrl}/c/${assistantId}`;
+  const embedCode = `<iframe src="${baseUrl}/embed/${assistantId}" width="100%" height="600" frameborder="0" style="border: none; border-radius: 8px;"></iframe>`;
 
   const copyToClipboard = async (text: string, field: string) => {
     await navigator.clipboard.writeText(text);

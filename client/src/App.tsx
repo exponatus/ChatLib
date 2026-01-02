@@ -15,6 +15,7 @@ import ChatInterfacePage from "@/pages/chat-interface";
 import SecurityPage from "@/pages/security";
 import DeployPage from "@/pages/deploy";
 import LoginPage from "@/pages/login";
+import EmbedPage from "@/pages/embed";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
@@ -40,6 +41,10 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={LoginPage} />
+      
+      {/* Public Embed Route - No authentication required */}
+      <Route path="/embed/:id" component={EmbedPage} />
+      <Route path="/c/:id" component={EmbedPage} />
       
       {/* Protected Routes */}
       <Route path="/">
