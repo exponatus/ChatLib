@@ -1,8 +1,8 @@
 import { LayoutShell } from "@/components/layout-shell";
 import { useAssistants, useCreateAssistant } from "@/hooks/use-assistants";
-import { AssistantCard } from "@/components/assistant-card";
+import { AssistantCard, AddAssistantCard } from "@/components/assistant-card";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -63,19 +62,12 @@ export default function Dashboard() {
   return (
     <LayoutShell>
       <div className="max-w-6xl mx-auto p-4 md:p-8 lg:p-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-        <div>
+      <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight mb-2 text-gradient w-fit">My Assistants</h1>
           <p className="text-muted-foreground text-lg">Manage your AI library chatbots.</p>
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="lg" className="rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all hover:-translate-y-0.5">
-              <Plus className="w-5 h-5 mr-2" />
-              Create New Assistant
-            </Button>
-          </DialogTrigger>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>Create AI Assistant</DialogTitle>
@@ -126,28 +118,13 @@ export default function Dashboard() {
             </form>
           </DialogContent>
         </Dialog>
-      </div>
 
-      {assistants && assistants.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {assistants.map((assistant) => (
-            <AssistantCard key={assistant.id} assistant={assistant} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-20 bg-white/50 backdrop-blur-sm rounded-3xl border border-dashed border-border">
-          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-6">
-            <Sparkles className="w-8 h-8 text-muted-foreground" />
-          </div>
-          <h3 className="text-xl font-semibold mb-2">No assistants yet</h3>
-          <p className="text-muted-foreground max-w-sm mx-auto mb-8">
-            Create your first AI library assistant to start answering user queries automatically.
-          </p>
-          <Button onClick={() => setOpen(true)} variant="outline" className="border-primary text-primary hover:bg-primary/5">
-            Create your first assistant
-          </Button>
-        </div>
-      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {assistants?.map((assistant) => (
+          <AssistantCard key={assistant.id} assistant={assistant} />
+        ))}
+        <AddAssistantCard onClick={() => setOpen(true)} />
+      </div>
       </div>
     </LayoutShell>
   );

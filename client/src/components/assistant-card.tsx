@@ -1,7 +1,18 @@
 import { Assistant } from "@shared/schema";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Settings, MoreVertical, Trash2, ExternalLink } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { 
+  MoreHorizontal, 
+  Pencil, 
+  Image as ImageIcon, 
+  RotateCcw,
+  Clock,
+  Star,
+  Settings
+} from "lucide-react";
 import { Link } from "wouter";
 import {
   DropdownMenu,
@@ -18,59 +29,157 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useDeleteAssistant } from "@/hooks/use-assistants";
-import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { useDeleteAssistant, useUpdateAssistant } from "@/hooks/use-assistants";
+import { useState, useRef } from "react";
 
 export function AssistantCard({ assistant }: { assistant: Assistant }) {
   const { mutate: deleteAssistant, isPending } = useDeleteAssistant();
+  const { mutateAsync: updateAssistant } = useUpdateAssistant();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const [newName, setNewName] = useState(assistant.name);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleRename = async () => {
+    if (newName.trim()) {
+      await updateAssistant({ id: assistant.id, name: newName.trim() });
+      setShowRenameDialog(false);
+    }
+  };
+
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        await updateAssistant({ id: assistant.id, coverImage: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = async () => {
+    await updateAssistant({ id: assistant.id, coverImage: null });
+  };
+
+  const formattedDate = new Date(assistant.createdAt).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
 
   return (
     <>
-      <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 border-border/60 bg-gradient-to-br from-card to-secondary/30">
-        <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href={`/assistant/${assistant.id}`}>Edit Configuration</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                className="text-destructive focus:text-destructive"
-                onSelect={() => setShowDeleteDialog(true)}
-              >
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+      <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 border-border/60">
+        {/* Cover Image Area */}
+        <div className="relative h-32 bg-gradient-to-br from-amber-100 to-orange-50 flex items-center justify-center">
+          {assistant.coverImage ? (
+            <img 
+              src={assistant.coverImage} 
+              alt={assistant.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-16 h-16 rounded-lg bg-amber-200/50 flex items-center justify-center">
+              <div className="w-10 h-8 bg-amber-400 rounded-sm relative">
+                <div className="absolute bottom-0 left-1 w-8 h-6 bg-blue-400 rounded-t-sm" />
+              </div>
+            </div>
+          )}
+
+          {/* Badges */}
+          <div className="absolute top-3 left-3 flex gap-2">
+            {assistant.isDemo ? (
+              <Badge className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5">
+                <Star className="w-3 h-3 mr-1" />
+                DEMO
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-white/90 text-[10px] font-bold px-2 py-0.5">
+                <span className="w-2 h-2 rounded-full bg-gray-400 mr-1.5" />
+                DRAFT
+              </Badge>
+            )}
+          </div>
+
+          {/* Menu Button */}
+          <div className="absolute top-3 right-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-8 w-8 bg-white/80 hover:bg-white"
+                  data-testid={`button-menu-${assistant.id}`}
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setShowRenameDialog(true)}>
+                  <Pencil className="w-4 h-4 mr-2" />
+                  Rename
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => fileInputRef.current?.click()}>
+                  <ImageIcon className="w-4 h-4 mr-2" />
+                  Change cover
+                </DropdownMenuItem>
+                {assistant.coverImage && (
+                  <DropdownMenuItem onClick={handleRemoveImage}>
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Remove image
+                  </DropdownMenuItem>
+                )}
+                {!assistant.isDemo && (
+                  <DropdownMenuItem 
+                    className="text-destructive focus:text-destructive"
+                    onSelect={() => setShowDeleteDialog(true)}
+                  >
+                    Delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
-        <CardHeader>
-          <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-            <MessageSquare className="w-6 h-6 text-primary" />
+        <CardContent className="p-4">
+          {/* Assistant Name & ID */}
+          <h3 className="text-lg font-semibold text-primary mb-1">{assistant.name}</h3>
+          <p className="text-sm text-muted-foreground mb-4">{assistant.id}</p>
+
+          {/* Created Date */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="w-3.5 h-3.5" />
+              <span>{formattedDate}</span>
+            </div>
+            <Link href={`/assistant/${assistant.id}`}>
+              <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-manage-${assistant.id}`}>
+                <Settings className="w-4 h-4" />
+              </Button>
+            </Link>
           </div>
-          <CardTitle className="font-display text-xl">{assistant.name}</CardTitle>
-          <CardDescription className="line-clamp-2 min-h-[2.5rem]">
-            {assistant.description || "No description provided."}
-          </CardDescription>
-        </CardHeader>
-        
-        <CardFooter className="pt-2">
-          <Link href={`/assistant/${assistant.id}`} className="w-full">
-            <Button className="w-full bg-secondary hover:bg-primary hover:text-white text-secondary-foreground transition-all duration-300 shadow-sm">
-              <Settings className="w-4 h-4 mr-2" />
-              Manage Assistant
-            </Button>
-          </Link>
-        </CardFooter>
+        </CardContent>
+
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          className="hidden" 
+          accept="image/*"
+          onChange={handleCoverChange}
+        />
       </Card>
 
+      {/* Delete Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -92,6 +201,49 @@ export function AssistantCard({ assistant }: { assistant: Assistant }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Rename Dialog */}
+      <Dialog open={showRenameDialog} onOpenChange={setShowRenameDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Assistant</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input 
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Assistant name"
+                data-testid="input-rename"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>Cancel</Button>
+            <Button onClick={handleRename} data-testid="button-save-rename">Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
+  );
+}
+
+export function AddAssistantCard({ onClick }: { onClick: () => void }) {
+  return (
+    <Card 
+      className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border-2 border-dashed border-border cursor-pointer min-h-[240px] flex items-center justify-center"
+      onClick={onClick}
+      data-testid="card-add-assistant"
+    >
+      <div className="text-center p-6">
+        <div className="w-12 h-12 rounded-full border-2 border-dashed border-muted-foreground/30 flex items-center justify-center mx-auto mb-4 group-hover:border-primary group-hover:text-primary transition-colors">
+          <span className="text-2xl text-muted-foreground group-hover:text-primary">+</span>
+        </div>
+        <p className="text-sm text-muted-foreground group-hover:text-foreground transition-colors">
+          Add Assistant
+        </p>
+      </div>
+    </Card>
   );
 }

@@ -75,6 +75,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async ensureDemoAssistant(userId: string): Promise<Assistant> {
+    // Check if demo already exists
+    const existingAssistants = await this.getAssistants(userId);
+    const demoAssistant = existingAssistants.find(a => a.isDemo);
+
+    if (demoAssistant) {
+      // Demo already exists, return as-is (don't reset)
+      return demoAssistant;
+    }
+
+    // Create new demo assistant with all required fields
     const defaultDemo = {
       name: "Library Assistant",
       description: "Demo assistant for testing library services",
@@ -82,18 +92,9 @@ export class DatabaseStorage implements IStorage {
       welcomeMessage: "Hello! I'm here to help you with library services, borrowing rules, events, and digital resources. How can I assist you today?",
       isDemo: true,
       userId,
+      deploymentConfig: {},
     };
 
-    // Check if demo already exists
-    const existingAssistants = await this.getAssistants(userId);
-    const demoAssistant = existingAssistants.find(a => a.isDemo);
-
-    if (demoAssistant) {
-      // Reset demo to default values
-      return await this.updateAssistant(demoAssistant.id, defaultDemo);
-    }
-
-    // Create new demo assistant
     return await this.createAssistant(defaultDemo);
   }
 
