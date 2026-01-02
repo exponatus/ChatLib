@@ -29,6 +29,7 @@ export default function AssistantEditor() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [conversationId, setConversationId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const suggestedPrompts = [
@@ -38,14 +39,33 @@ export default function AssistantEditor() {
     "Do you have e-books?"
   ];
 
+  const createChatSession = async () => {
+    try {
+      const res = await fetch("/api/chat/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assistantId }),
+        credentials: "include"
+      });
+      if (res.ok) {
+        const session = await res.json();
+        setConversationId(session.id);
+        return session.id;
+      }
+    } catch (error) {
+      console.error("Failed to create chat session:", error);
+    }
+    return null;
+  };
+
   useEffect(() => {
     if (assistant) {
-      // Always update welcome message when assistant data changes
       setMessages([{
         id: "welcome",
         role: "assistant",
         content: assistant.welcomeMessage || "Hello! I'm here to help you with library services, borrowing rules, events, and digital resources. How can I assist you today?"
       }]);
+      setConversationId(null);
     }
   }, [assistant?.welcomeMessage, assistant?.name]);
 
@@ -67,16 +87,80 @@ export default function AssistantEditor() {
     setInputValue("");
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const assistantMessage: ChatMessage = {
-        id: `assistant-${Date.now()}`,
+    try {
+      let sessionId = conversationId;
+      if (!sessionId) {
+        sessionId = await createChatSession();
+        if (!sessionId) {
+          setMessages(prev => [...prev, {
+            id: `error-${Date.now()}`,
+            role: "assistant",
+            content: "Sorry, I couldn't connect to the chat service. Please try again."
+          }]);
+          setIsTyping(false);
+          return;
+        }
+      }
+
+      const res = await fetch(`/api/chat/sessions/${sessionId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: messageText }),
+        credentials: "include"
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to send message");
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response stream");
+
+      const assistantMessageId = `assistant-${Date.now()}`;
+      setMessages(prev => [...prev, {
+        id: assistantMessageId,
         role: "assistant",
-        content: "I'd be happy to help you with that! As a library assistant, I can provide information about our services, hours, and resources. Is there anything specific you'd like to know?"
-      };
-      setMessages(prev => [...prev, assistantMessage]);
+        content: ""
+      }]);
+
+      const decoder = new TextDecoder();
+      let fullContent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.content) {
+                fullContent += data.content;
+                setMessages(prev => prev.map(m => 
+                  m.id === assistantMessageId 
+                    ? { ...m, content: fullContent }
+                    : m
+                ));
+              }
+            } catch {
+            }
+          }
+        }
+      }
+
       setIsTyping(false);
-    }, 1500);
+    } catch (error) {
+      console.error("Chat error:", error);
+      setMessages(prev => [...prev, {
+        id: `error-${Date.now()}`,
+        role: "assistant",
+        content: "Sorry, something went wrong. Please try again."
+      }]);
+      setIsTyping(false);
+    }
   };
 
   const handleClearSession = () => {
@@ -85,6 +169,7 @@ export default function AssistantEditor() {
       role: "assistant",
       content: assistant?.welcomeMessage || "Hello! I'm here to help you with library services, borrowing rules, events, and digital resources. How can I assist you today?"
     }]);
+    setConversationId(null);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -169,12 +254,12 @@ export default function AssistantEditor() {
                         : "bg-muted"
                     }`}
                   >
-                    <p className="text-sm leading-relaxed">{message.content}</p>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
                   </div>
                 </div>
               ))}
 
-              {isTyping && (
+              {isTyping && messages[messages.length - 1]?.content === "" && (
                 <div className="flex justify-start">
                   <div className="bg-muted rounded-xl px-4 py-3">
                     <div className="flex gap-1">
