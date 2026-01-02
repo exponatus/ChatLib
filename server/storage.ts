@@ -24,6 +24,7 @@ export interface IStorage {
   // Documents
   getDocuments(assistantId: number): Promise<Document[]>;
   createDocument(doc: InsertDocument): Promise<Document>;
+  updateDocument(id: number, updates: Partial<InsertDocument>): Promise<Document | undefined>;
   deleteDocument(id: number): Promise<void>;
 
   // Chat
@@ -109,6 +110,11 @@ If the information is not available in the sources, say so and suggest contactin
   async createDocument(doc: InsertDocument): Promise<Document> {
     const [newDoc] = await db.insert(documents).values(doc).returning();
     return newDoc;
+  }
+
+  async updateDocument(id: number, updates: Partial<InsertDocument>): Promise<Document | undefined> {
+    const [updated] = await db.update(documents).set(updates).where(eq(documents.id, id)).returning();
+    return updated;
   }
 
   async deleteDocument(id: number): Promise<void> {

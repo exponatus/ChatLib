@@ -95,6 +95,17 @@ export const api = {
         401: errorSchemas.unauthorized,
       },
     },
+    update: {
+      method: 'PUT' as const,
+      path: '/api/documents/:id',
+      input: insertDocumentSchema.omit({ assistantId: true }).partial(),
+      responses: {
+        200: z.custom<typeof documents.$inferSelect>(),
+        400: errorSchemas.validation,
+        404: errorSchemas.notFound,
+        401: errorSchemas.unauthorized,
+      },
+    },
     delete: {
       method: 'DELETE' as const,
       path: '/api/documents/:id',

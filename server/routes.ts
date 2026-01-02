@@ -139,6 +139,19 @@ export async function registerRoutes(
     }
   });
 
+  app.put(api.documents.update.path, isAuthenticated, async (req: any, res) => {
+    const id = parseInt(req.params.id);
+    const validResult = api.documents.update.input.safeParse(req.body);
+    if (!validResult.success) {
+      return res.status(400).json({ message: validResult.error.message });
+    }
+    const updated = await storage.updateDocument(id, validResult.data);
+    if (!updated) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+    res.json(updated);
+  });
+
   app.delete(api.documents.delete.path, isAuthenticated, async (req: any, res) => {
     const id = parseInt(req.params.id);
     // TODO: Verify ownership via assistant fetch or optimized query

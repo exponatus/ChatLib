@@ -181,6 +181,39 @@ export function useCreateDocument() {
   });
 }
 
+export function useUpdateDocument() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ id, assistantId, ...data }: { id: number; assistantId: number } & Partial<InsertDocument>) => {
+      const url = buildUrl(api.documents.update.path, { id });
+      const res = await fetch(url, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to update document");
+      return api.documents.update.responses[200].parse(await res.json());
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [api.documents.list.path, variables.assistantId] });
+      toast({
+        title: "Updated",
+        description: "Document updated successfully",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
 export function useDeleteDocument() {
   const queryClient = useQueryClient();
   const { toast } = useToast();

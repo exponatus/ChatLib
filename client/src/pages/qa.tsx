@@ -1,6 +1,6 @@
 import { useParams } from "wouter";
 import { LayoutShell } from "@/components/layout-shell";
-import { useAssistant, useDocuments, useCreateDocument, useDeleteDocument, useRetrainAssistant } from "@/hooks/use-assistants";
+import { useAssistant, useDocuments, useCreateDocument, useUpdateDocument, useDeleteDocument, useRetrainAssistant } from "@/hooks/use-assistants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,10 @@ import {
   ChevronDown,
   Search,
   Trash2,
-  HelpCircle
+  HelpCircle,
+  Pencil,
+  X,
+  Check
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -41,6 +44,7 @@ export default function QAPage() {
   const { data: assistant, isLoading: isLoadingAssistant } = useAssistant(assistantId);
   const { data: documents, isLoading: isLoadingDocs } = useDocuments(assistantId);
   const { mutateAsync: createDocument, isPending: isSaving } = useCreateDocument();
+  const { mutateAsync: updateDocument, isPending: isUpdating } = useUpdateDocument();
   const { mutateAsync: deleteDocument } = useDeleteDocument();
   const { mutateAsync: retrainAssistant, isPending: isRetraining } = useRetrainAssistant();
 
@@ -50,6 +54,42 @@ export default function QAPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("default");
   const [selectedFaqs, setSelectedFaqs] = useState<Set<number>>(new Set());
+  
+  // Edit state
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editQuestion, setEditQuestion] = useState("");
+  const [editResponse, setEditResponse] = useState("");
+
+  const startEditing = (doc: { id: number; metadata: { question?: string; response?: string } | null }) => {
+    const metadata = doc.metadata;
+    setEditingId(doc.id);
+    setEditQuestion(metadata?.question || '');
+    setEditResponse(metadata?.response || '');
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditQuestion("");
+    setEditResponse("");
+  };
+
+  const saveEdit = async () => {
+    if (!editingId || !editQuestion.trim() || !editResponse.trim()) return;
+    
+    await updateDocument({
+      id: editingId,
+      assistantId,
+      title: editQuestion,
+      content: `Q: ${editQuestion}\nA: ${editResponse}`,
+      metadata: { 
+        question: editQuestion,
+        response: editResponse,
+        size: new Blob([editQuestion + editResponse]).size 
+      }
+    });
+    
+    cancelEditing();
+  };
 
   const faqDocuments = documents?.filter(d => d.sourceType === 'faq') || [];
 
@@ -228,6 +268,59 @@ export default function QAPage() {
                   <div className="space-y-2">
                     {filteredDocs.map(doc => {
                       const metadata = doc.metadata as { question?: string; response?: string } | null;
+                      const isEditing = editingId === doc.id;
+                      
+                      if (isEditing) {
+                        return (
+                          <div 
+                            key={doc.id} 
+                            className="p-4 bg-muted/30 rounded-lg border-2 border-primary/20"
+                            data-testid={`faq-edit-${doc.id}`}
+                          >
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">Question</Label>
+                                <Textarea 
+                                  value={editQuestion}
+                                  onChange={(e) => setEditQuestion(e.target.value)}
+                                  className="min-h-[80px] resize-none"
+                                  data-testid={`edit-question-${doc.id}`}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs text-muted-foreground">Response</Label>
+                                <Textarea 
+                                  value={editResponse}
+                                  onChange={(e) => setEditResponse(e.target.value)}
+                                  className="min-h-[80px] resize-none"
+                                  data-testid={`edit-response-${doc.id}`}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={cancelEditing}
+                                data-testid={`button-cancel-edit-${doc.id}`}
+                              >
+                                <X className="w-4 h-4 mr-1" />
+                                Cancel
+                              </Button>
+                              <Button 
+                                size="sm"
+                                onClick={saveEdit}
+                                disabled={!editQuestion.trim() || !editResponse.trim() || isUpdating}
+                                data-testid={`button-save-edit-${doc.id}`}
+                              >
+                                {isUpdating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                                Save
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
                       return (
                         <div 
                           key={doc.id} 
@@ -247,7 +340,7 @@ export default function QAPage() {
                               setSelectedFaqs(newSelected);
                             }}
                           />
-                          <div className="p-2 bg-amber-50 text-amber-600 rounded-md mt-0.5">
+                          <div className="p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-md mt-0.5">
                             <HelpCircle className="w-4 h-4" />
                           </div>
                           <div className="flex-1 min-w-0">
@@ -259,15 +352,26 @@ export default function QAPage() {
                               FAQ Pair • {new Date(doc.createdAt).toLocaleDateString()}
                             </p>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => deleteDocument({ id: doc.id, assistantId })}
-                            data-testid={`button-delete-${doc.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="opacity-0 group-hover:opacity-100"
+                              onClick={() => startEditing({ id: doc.id, metadata })}
+                              data-testid={`button-edit-${doc.id}`}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="opacity-0 group-hover:opacity-100 text-destructive"
+                              onClick={() => deleteDocument({ id: doc.id, assistantId })}
+                              data-testid={`button-delete-${doc.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       );
                     })}
