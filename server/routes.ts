@@ -33,9 +33,11 @@ export async function registerRoutes(
   // === Assistants Routes ===
   app.get(api.assistants.list.path, isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
-    // Ensure demo assistant exists and is reset to defaults
+    // Ensure demo assistant exists
     await storage.ensureDemoAssistant(userId);
     const assistants = await storage.getAssistants(userId);
+    // Sort: demo assistant first
+    assistants.sort((a, b) => (b.isDemo ? 1 : 0) - (a.isDemo ? 1 : 0));
     res.json(assistants);
   });
 
