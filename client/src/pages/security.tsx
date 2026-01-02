@@ -16,8 +16,11 @@ import {
   Ban,
   Flame,
   Lock,
-  Info
+  Info,
+  Timer,
+  Database
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import {
   Select,
@@ -60,6 +63,13 @@ export default function SecurityPage() {
   const [dangerousFilter, setDangerousFilter] = useState('Balanced');
   
   const [sessionOnlyStorage, setSessionOnlyStorage] = useState(true);
+  
+  // Rate limiting & caching
+  const [isRateLimitOpen, setIsRateLimitOpen] = useState(true);
+  const [rateLimitEnabled, setRateLimitEnabled] = useState(true);
+  const [rateLimitCount, setRateLimitCount] = useState(50);
+  const [rateLimitPeriod, setRateLimitPeriod] = useState(60);
+  const [responseCacheEnabled, setResponseCacheEnabled] = useState(true);
 
   useEffect(() => {
     if (assistant) {
@@ -72,6 +82,10 @@ export default function SecurityPage() {
       setSexualFilter(config.sexualFilter || 'Standard');
       setDangerousFilter(config.dangerousFilter || 'Balanced');
       setSessionOnlyStorage(config.sessionOnlyStorage ?? true);
+      setRateLimitEnabled(config.rateLimitEnabled ?? true);
+      setRateLimitCount(config.rateLimitCount ?? 50);
+      setRateLimitPeriod(config.rateLimitPeriod ?? 60);
+      setResponseCacheEnabled(config.responseCacheEnabled ?? true);
     }
   }, [assistant]);
 
@@ -90,6 +104,10 @@ export default function SecurityPage() {
         sexualFilter,
         dangerousFilter,
         sessionOnlyStorage,
+        rateLimitEnabled,
+        rateLimitCount,
+        rateLimitPeriod,
+        responseCacheEnabled,
       },
     });
   };
@@ -327,6 +345,101 @@ export default function SecurityPage() {
                       onCheckedChange={setSessionOnlyStorage}
                       data-testid="switch-session-only"
                     />
+                  </div>
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
+
+          {/* Rate Limiting & Cost Optimization */}
+          <Collapsible open={isRateLimitOpen} onOpenChange={setIsRateLimitOpen}>
+            <Card>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="cursor-pointer flex flex-row items-center justify-between gap-2 py-4">
+                  <CardTitle className="text-base font-semibold flex items-center gap-2">
+                    <Timer className="w-4 h-4 text-purple-500" />
+                    Rate Limiting & Cost Optimization
+                  </CardTitle>
+                  {isRateLimitOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <CardContent className="pt-0 space-y-4">
+                  {/* Rate Limiting Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                    <div>
+                      <p className="font-semibold text-sm">Rate Limiting</p>
+                      <p className="text-xs text-muted-foreground mt-1 max-w-md">
+                        Limit the number of questions a user can ask within a time period to prevent abuse.
+                      </p>
+                    </div>
+                    <Switch 
+                      checked={rateLimitEnabled} 
+                      onCheckedChange={setRateLimitEnabled}
+                      data-testid="switch-rate-limit"
+                    />
+                  </div>
+
+                  {rateLimitEnabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/20 rounded-lg">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Max Questions
+                        </Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={1000}
+                          value={rateLimitCount}
+                          onChange={(e) => setRateLimitCount(Number(e.target.value) || 50)}
+                          data-testid="input-rate-limit-count"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Maximum questions per user
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          Time Period (minutes)
+                        </Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={1440}
+                          value={rateLimitPeriod}
+                          onChange={(e) => setRateLimitPeriod(Number(e.target.value) || 60)}
+                          data-testid="input-rate-limit-period"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Reset period in minutes (1-1440)
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Response Caching Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <Database className="w-4 h-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-sm">Response Caching</p>
+                        <p className="text-xs text-muted-foreground mt-1 max-w-md">
+                          Cache AI responses for identical questions. Reduces API costs by up to 70% for frequently asked questions.
+                        </p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={responseCacheEnabled} 
+                      onCheckedChange={setResponseCacheEnabled}
+                      data-testid="switch-response-cache"
+                    />
+                  </div>
+
+                  <div className="flex items-start gap-3 p-4 bg-purple-50/50 dark:bg-purple-950/20 rounded-lg border border-purple-100 dark:border-purple-900">
+                    <Info className="w-4 h-4 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                    <p className="text-sm text-purple-800 dark:text-purple-200">
+                      <strong>Cost Tip:</strong> With caching enabled, repeat questions (like "What are library hours?") are answered instantly without calling Gemini API.
+                    </p>
                   </div>
                 </CardContent>
               </CollapsibleContent>
