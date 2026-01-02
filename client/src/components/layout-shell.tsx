@@ -36,6 +36,7 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
   const isWebsitePage = location.includes("/website");
   const isQAPage = location.includes("/qa");
   const isAIWorkspacePage = location.includes("/ai-workspace");
+  const isChatInterfacePage = location.includes("/chat-interface");
   const basePath = assistantId ? `/assistant/${assistantId}` : '';
 
   const NavContent = () => (
@@ -80,9 +81,12 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
               <Cpu className="w-4 h-4" />
               AI Workspace
             </Link>
-            <Link href={`/assistant/${assistantId}?tab=interface`} className={`
+            <Link href={`/assistant/${assistantId}/chat-interface`} className={`
               flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition-all duration-200
-              text-muted-foreground hover:bg-muted hover:text-foreground
+              ${isChatInterfacePage 
+                ? "bg-primary text-primary-foreground" 
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }
             `}>
               <MessageSquare className="w-4 h-4" />
               Chat Interface
