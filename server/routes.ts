@@ -167,6 +167,36 @@ export async function registerRoutes(
     res.json(messages);
   });
 
+  // Helper: Normalize text for FAQ matching
+  function normalizeText(text: string): string {
+    return text
+      .toLowerCase()
+      .replace(/[?!.,;:'"«»]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // Helper: Find matching FAQ entry - exact match only
+  function findFaqMatch(userQuestion: string, docs: any[]): string | null {
+    const normalizedQuery = normalizeText(userQuestion);
+    
+    for (const doc of docs) {
+      if (doc.sourceType !== 'faq') continue;
+      
+      const meta = doc.metadata as { question?: string; response?: string } | null;
+      if (!meta?.question || !meta?.response) continue;
+      
+      const normalizedFaq = normalizeText(meta.question);
+      
+      // Only exact match after normalization
+      if (normalizedQuery === normalizedFaq) {
+        return meta.response;
+      }
+    }
+    
+    return null;
+  }
+
   // RAG Chat Endpoint
   app.post(api.chat.sendMessage.path, async (req, res) => {
     try {
@@ -187,44 +217,55 @@ export async function registerRoutes(
         content
       });
 
-      // 3. Fetch Context (RAG) - Simple implementation: fetch all docs
-      // In production, use embeddings/vector search
+      // 3. Fetch documents for RAG
       const docs = await storage.getDocuments(assistant.id);
-      const contextText = docs.map(d => `Source: ${d.title}\n${d.content}`).join("\n\n");
 
-      // 4. Construct Prompt - Strict RAG: ONLY use knowledge base
-      // Format Q&A entries more explicitly
+      // 4. DETERMINISTIC FAQ MATCHING - Check BEFORE calling AI
+      const faqAnswer = findFaqMatch(content, docs);
+      
+      if (faqAnswer) {
+        // Found exact FAQ match - return answer directly without AI
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        
+        res.write(`data: ${JSON.stringify({ content: faqAnswer })}\n\n`);
+        
+        await storage.createMessage({
+          conversationId,
+          role: "model",
+          content: faqAnswer
+        });
+        
+        res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+        res.end();
+        return;
+      }
+
+      // 5. No FAQ match - Use AI with knowledge base context
       const formattedContext = docs.map(d => {
         const meta = d.metadata as { question?: string; response?: string } | null;
         if (d.sourceType === 'faq' && meta?.question && meta?.response) {
-          return `QUESTION: "${meta.question}"\nANSWER: "${meta.response}"`;
+          return `Q: ${meta.question}\nA: ${meta.response}`;
         }
-        return `SOURCE: ${d.title}\nCONTENT: ${d.content}`;
-      }).join("\n\n---\n\n");
+        return `[${d.title}]\n${d.content}`;
+      }).join("\n\n");
 
-      const systemInstruction = `You are a library assistant that ONLY answers based on the provided knowledge base.
-
-STRICT RULES:
-1. You can ONLY use information from the KNOWLEDGE BASE below
-2. You must NEVER use your general knowledge or training data
-3. If a user's question matches a QUESTION in the knowledge base, respond with EXACTLY the corresponding ANSWER
-4. If information is not in the knowledge base, respond: "I don't have that information. Please contact library staff."
-5. Do not elaborate, explain, or add context beyond what is in the knowledge base
+      const systemInstruction = `You are a library assistant. Answer questions using ONLY the knowledge base below.
+If the answer is not in the knowledge base, say: "I don't have that information. Please contact library staff."
 
 ${assistant.systemPrompt}
 
-=== KNOWLEDGE BASE ===
-${formattedContext || "Empty - no documents added yet."}
-=== END KNOWLEDGE BASE ===`;
+KNOWLEDGE BASE:
+${formattedContext || "No information available."}`;
 
       const history = await storage.getMessages(conversationId);
-      // Format for Gemini: user/model roles
       const contents = history.map(m => ({
         role: m.role === 'user' ? 'user' : 'model',
         parts: [{ text: m.content }]
       }));
 
-      // 5. Stream Response
+      // 6. Stream AI Response
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
@@ -245,10 +286,9 @@ ${formattedContext || "Empty - no documents added yet."}
         }
       }
 
-      // 6. Save Assistant Message
       await storage.createMessage({
         conversationId,
-        role: "model", // Gemini uses 'model', we map to 'assistant' logic if needed, but schema says 'role' text
+        role: "model",
         content: fullResponse
       });
 
