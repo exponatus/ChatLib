@@ -3,10 +3,12 @@ import {
   assistants, type Assistant, type InsertAssistant,
   documents, type Document, type InsertDocument,
   conversations, type Conversation, type InsertConversation,
-  messages, type Message, type InsertMessage
+  messages, type Message, type InsertMessage,
+  responseCache, type ResponseCache
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
+import * as crypto from "crypto";
 
 export interface IStorage {
   // Auth
@@ -23,6 +25,7 @@ export interface IStorage {
 
   // Documents
   getDocuments(assistantId: number): Promise<Document[]>;
+  getDocument(id: number): Promise<Document | undefined>;
   createDocument(doc: InsertDocument): Promise<Document>;
   updateDocument(id: number, updates: Partial<InsertDocument>): Promise<Document | undefined>;
   deleteDocument(id: number): Promise<void>;
@@ -32,6 +35,11 @@ export interface IStorage {
   getConversation(id: number): Promise<Conversation | undefined>;
   getMessages(conversationId: number): Promise<Message[]>;
   createMessage(message: InsertMessage): Promise<Message>;
+
+  // Response Cache
+  getCachedResponse(assistantId: number, question: string): Promise<ResponseCache | undefined>;
+  cacheResponse(assistantId: number, question: string, response: string): Promise<ResponseCache>;
+  clearCache(assistantId: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -107,6 +115,11 @@ If the information is not available in the sources, say so and suggest contactin
     return db.select().from(documents).where(eq(documents.assistantId, assistantId)).orderBy(desc(documents.createdAt));
   }
 
+  async getDocument(id: number): Promise<Document | undefined> {
+    const [doc] = await db.select().from(documents).where(eq(documents.id, id));
+    return doc;
+  }
+
   async createDocument(doc: InsertDocument): Promise<Document> {
     const [newDoc] = await db.insert(documents).values(doc).returning();
     return newDoc;
@@ -139,6 +152,58 @@ If the information is not available in the sources, say so and suggest contactin
   async createMessage(message: InsertMessage): Promise<Message> {
     const [msg] = await db.insert(messages).values(message).returning();
     return msg;
+  }
+
+  // Response Cache
+  private normalizeQuestion(question: string): string {
+    return question.toLowerCase().trim().replace(/\s+/g, ' ');
+  }
+
+  private hashQuestion(question: string): string {
+    return crypto.createHash('md5').update(this.normalizeQuestion(question)).digest('hex');
+  }
+
+  async getCachedResponse(assistantId: number, question: string): Promise<ResponseCache | undefined> {
+    const questionHash = this.hashQuestion(question);
+    const [cached] = await db
+      .select()
+      .from(responseCache)
+      .where(and(
+        eq(responseCache.assistantId, assistantId),
+        eq(responseCache.questionHash, questionHash)
+      ));
+
+    if (cached) {
+      // Update hit count and last used time
+      await db
+        .update(responseCache)
+        .set({ 
+          hitCount: sql`${responseCache.hitCount} + 1`,
+          lastUsedAt: sql`NOW()`
+        })
+        .where(eq(responseCache.id, cached.id));
+    }
+
+    return cached;
+  }
+
+  async cacheResponse(assistantId: number, question: string, response: string): Promise<ResponseCache> {
+    const questionHash = this.hashQuestion(question);
+    const [cached] = await db
+      .insert(responseCache)
+      .values({
+        assistantId,
+        questionHash,
+        question: this.normalizeQuestion(question),
+        response,
+        hitCount: 1,
+      })
+      .returning();
+    return cached;
+  }
+
+  async clearCache(assistantId: number): Promise<void> {
+    await db.delete(responseCache).where(eq(responseCache.assistantId, assistantId));
   }
 }
 

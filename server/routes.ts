@@ -17,6 +17,9 @@ const ai = new GoogleGenAI({
   },
 });
 
+// In-memory rate limit store (in production, use Redis)
+const rateLimitStore: Record<string, number[]> = {};
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -130,6 +133,8 @@ export async function registerRoutes(
         ...input,
         assistantId
       });
+      // Invalidate response cache when knowledge base changes
+      await storage.clearCache(assistantId);
       res.status(201).json(doc);
     } catch (err) {
         if (err instanceof z.ZodError) {
@@ -149,12 +154,18 @@ export async function registerRoutes(
     if (!updated) {
       return res.status(404).json({ message: "Document not found" });
     }
+    // Invalidate response cache when knowledge base changes
+    await storage.clearCache(updated.assistantId);
     res.json(updated);
   });
 
   app.delete(api.documents.delete.path, isAuthenticated, async (req: any, res) => {
     const id = parseInt(req.params.id);
-    // TODO: Verify ownership via assistant fetch or optimized query
+    // Get document first to find assistantId for cache invalidation
+    const doc = await storage.getDocument(id);
+    if (doc) {
+      await storage.clearCache(doc.assistantId);
+    }
     await storage.deleteDocument(id);
     res.status(204).send();
   });
@@ -395,14 +406,56 @@ export async function registerRoutes(
       const assistant = await storage.getAssistant(conversation.assistantId);
       if (!assistant) return res.status(404).json({ message: "Assistant not found" });
 
-      // 2. Save User Message
+      // Get deployment config for rate limiting and caching
+      const deployConfig = assistant.deploymentConfig as {
+        rateLimitEnabled?: boolean;
+        rateLimitCount?: number;
+        rateLimitPeriod?: number;
+        responseCacheEnabled?: boolean;
+        aiModel?: string;
+      } | null;
+
+      // Rate Limiting Check (using IP-based tracking)
+      const clientIp = req.ip || req.connection.remoteAddress || 'unknown';
+      const rateLimitKey = `ratelimit:${assistant.id}:${clientIp}`;
+      
+      if (deployConfig?.rateLimitEnabled !== false) {
+        const maxQuestions = deployConfig?.rateLimitCount || 50;
+        const periodMinutes = deployConfig?.rateLimitPeriod || 60;
+        
+        // Simple in-memory rate limiting (would use Redis in production)
+        const now = Date.now();
+        const windowStart = now - (periodMinutes * 60 * 1000);
+        
+        if (!rateLimitStore[rateLimitKey]) {
+          rateLimitStore[rateLimitKey] = [];
+        }
+        
+        // Clean old entries
+        rateLimitStore[rateLimitKey] = rateLimitStore[rateLimitKey].filter(t => t > windowStart);
+        
+        if (rateLimitStore[rateLimitKey].length >= maxQuestions) {
+          return res.status(429).json({ 
+            message: `Rate limit exceeded. Maximum ${maxQuestions} questions per ${periodMinutes} minutes.`
+          });
+        }
+        
+        rateLimitStore[rateLimitKey].push(now);
+      }
+
+      // 2. Check if this is the first message BEFORE saving
+      // This determines if caching is applicable (only for standalone questions)
+      const priorMessages = await storage.getMessages(conversationId);
+      const isFirstMessage = priorMessages.length === 0;
+
+      // 3. Save User Message
       await storage.createMessage({
         conversationId,
         role: "user",
         content
       });
 
-      // 3. Fetch documents for RAG
+      // 4. Fetch documents for RAG
       const docs = await storage.getDocuments(assistant.id);
 
       // 3a. Handle simple greetings without AI
@@ -580,14 +633,40 @@ ${formattedContext || emptyKBMsg}`;
         parts: [{ text: m.content }]
       }));
 
-      // 6. Stream AI Response
+      // 7. Check Response Cache (before calling AI)
+      // Only use cache for standalone questions (first message in conversation)
+      // Follow-up questions depend on context and should not be cached
+      const cacheEnabled = deployConfig?.responseCacheEnabled !== false;
+      
+      if (cacheEnabled && isFirstMessage) {
+        const cachedResponse = await storage.getCachedResponse(assistant.id, content);
+        if (cachedResponse) {
+          // Found cached response - return without calling AI
+          res.setHeader("Content-Type", "text/event-stream");
+          res.setHeader("Cache-Control", "no-cache");
+          res.setHeader("Connection", "keep-alive");
+          
+          res.write(`data: ${JSON.stringify({ content: cachedResponse.response })}\n\n`);
+          
+          await storage.createMessage({
+            conversationId,
+            role: "model",
+            content: cachedResponse.response
+          });
+          
+          res.write(`data: ${JSON.stringify({ done: true, cached: true })}\n\n`);
+          res.end();
+          return;
+        }
+      }
+
+      // 7. Stream AI Response
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
       // Use AI model from deploymentConfig (default to flash)
-      const config = assistant.deploymentConfig as { aiModel?: string } | null;
-      const modelName = config?.aiModel === 'pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+      const modelName = deployConfig?.aiModel === 'pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
       
       const stream = await ai.models.generateContentStream({
         model: modelName,
@@ -610,6 +689,16 @@ ${formattedContext || emptyKBMsg}`;
         role: "model",
         content: fullResponse
       });
+
+      // Cache the response for future identical questions (only first messages)
+      if (cacheEnabled && isFirstMessage && fullResponse.length > 0 && fullResponse.length < 5000) {
+        try {
+          await storage.cacheResponse(assistant.id, content, fullResponse);
+        } catch (cacheErr) {
+          // Ignore cache errors - duplicate question hash
+          console.log("Cache save skipped (likely duplicate)");
+        }
+      }
 
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
