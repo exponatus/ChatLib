@@ -410,8 +410,12 @@ ${formattedContext || "No information available."}`;
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
+      // Use AI model from deploymentConfig (default to flash)
+      const config = assistant.deploymentConfig as { aiModel?: string } | null;
+      const modelName = config?.aiModel === 'pro' ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+      
       const stream = await ai.models.generateContentStream({
-        model: "gemini-2.5-flash",
+        model: modelName,
         contents: contents,
         systemInstruction: systemInstruction,
       });

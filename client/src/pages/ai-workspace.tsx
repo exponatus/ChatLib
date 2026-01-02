@@ -53,14 +53,25 @@ export default function AIWorkspacePage() {
   useEffect(() => {
     if (assistant) {
       setSystemPrompt(assistant.systemPrompt || "You are a virtual library assistant.\nYour role is to help library patrons by answering questions using only the provided library data.\nBe clear, polite, and accurate.\nIf the information is not available in the sources, say so and suggest contacting the library staff.");
+      const config = assistant.deploymentConfig as any || {};
+      setSelectedModel(config.aiModel || 'flash');
+      setReasoningDepth([config.reasoningDepth ?? 0]);
+      setSearchGrounding(config.searchGrounding ?? false);
     }
   }, [assistant]);
 
   const handleUpdateEngine = async () => {
     if (!assistant) return;
+    const currentConfig = (assistant.deploymentConfig as any) || {};
     await updateAssistant({
       id: assistantId,
       systemPrompt,
+      deploymentConfig: {
+        ...currentConfig,
+        aiModel: selectedModel,
+        reasoningDepth: reasoningDepth[0],
+        searchGrounding,
+      },
     });
   };
 

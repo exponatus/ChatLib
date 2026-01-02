@@ -1,6 +1,6 @@
 import { useParams } from "wouter";
 import { LayoutShell } from "@/components/layout-shell";
-import { useAssistant } from "@/hooks/use-assistants";
+import { useAssistant, useUpdateAssistant } from "@/hooks/use-assistants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -18,7 +18,7 @@ import {
   Lock,
   Info
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Select,
   SelectContent,
@@ -44,6 +44,7 @@ export default function SecurityPage() {
   const assistantId = Number(id);
   
   const { data: assistant, isLoading } = useAssistant(assistantId);
+  const { mutateAsync: updateAssistant, isPending: isCommitting } = useUpdateAssistant();
 
   const [isCloudOpen, setIsCloudOpen] = useState(true);
   const [isGuardrailsOpen, setIsGuardrailsOpen] = useState(true);
@@ -60,13 +61,37 @@ export default function SecurityPage() {
   
   const [sessionOnlyStorage, setSessionOnlyStorage] = useState(true);
 
-  const [isCommitting, setIsCommitting] = useState(false);
+  useEffect(() => {
+    if (assistant) {
+      const config = assistant.deploymentConfig as any || {};
+      setSelectedRegion(config.dataRegion || 'us');
+      setCloudAuditLogging(config.cloudAuditLogging ?? false);
+      setAnonymizePatrons(config.anonymizePatrons ?? true);
+      setHarassmentFilter(config.harassmentFilter || 'Balanced');
+      setHateSpeechFilter(config.hateSpeechFilter || 'Balanced');
+      setSexualFilter(config.sexualFilter || 'Standard');
+      setDangerousFilter(config.dangerousFilter || 'Balanced');
+      setSessionOnlyStorage(config.sessionOnlyStorage ?? true);
+    }
+  }, [assistant]);
 
   const handleCommit = async () => {
-    setIsCommitting(true);
-    // Simulate saving
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsCommitting(false);
+    if (!assistant) return;
+    const currentConfig = (assistant.deploymentConfig as any) || {};
+    await updateAssistant({
+      id: assistantId,
+      deploymentConfig: {
+        ...currentConfig,
+        dataRegion: selectedRegion,
+        cloudAuditLogging,
+        anonymizePatrons,
+        harassmentFilter,
+        hateSpeechFilter,
+        sexualFilter,
+        dangerousFilter,
+        sessionOnlyStorage,
+      },
+    });
   };
 
   if (isLoading) {

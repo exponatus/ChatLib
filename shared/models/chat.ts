@@ -27,6 +27,19 @@ export const assistants = pgTable("assistants", {
     suggestedPrompts?: string[];
     footerText?: string;
     showGeminiBranding?: boolean;
+    // AI Workspace settings
+    aiModel?: 'flash' | 'pro';
+    reasoningDepth?: number;
+    searchGrounding?: boolean;
+    // Security settings
+    dataRegion?: string;
+    cloudAuditLogging?: boolean;
+    anonymizePatrons?: boolean;
+    harassmentFilter?: string;
+    hateSpeechFilter?: string;
+    sexualFilter?: string;
+    dangerousFilter?: string;
+    sessionOnlyStorage?: boolean;
   }>(),
   lastTrainedAt: timestamp("last_trained_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
