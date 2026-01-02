@@ -43,8 +43,8 @@ export default function LoginPage() {
             Get Started
             <ArrowRight className="ml-2 w-5 h-5" />
           </Button>
-          <p className="mt-4 text-xs text-slate-400 uppercase tracking-widest font-semibold">
-            Powered by Gemini AI
+          <p className="mt-4 text-xs text-slate-400 tracking-wide">
+            © 2026 ChatLib.de — Alexander Ananyev
           </p>
         </div>
       </div>

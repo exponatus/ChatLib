@@ -14,7 +14,6 @@ import {
   Cloud
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { SiGoogle } from "react-icons/si";
 
 interface ChatMessage {
   id: string;
@@ -231,10 +230,8 @@ export default function AssistantEditor() {
                   <span className="w-2 h-2 rounded-full bg-amber-500" />
                   <span className="uppercase tracking-wide font-medium">Testing Environment</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <span>Powered by</span>
-                  <SiGoogle className="w-3 h-3" />
-                  <span className="font-semibold">Gemini</span>
+                <div>
+                  <span>© 2026 ChatLib.de — Alexander Ananyev</span>
                 </div>
               </div>
             </div>
