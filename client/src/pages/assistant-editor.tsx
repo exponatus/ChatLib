@@ -52,6 +52,68 @@ export default function AssistantEditor() {
   
   const footerText = config?.footerText || "";
   const showGeminiBranding = config?.showGeminiBranding !== false;
+  const selectedTheme = config?.theme || 'material';
+  const selectedFont = config?.font || 'Inter';
+
+  // Theme-specific styles
+  const themeStyles = {
+    material: {
+      card: "rounded-2xl shadow-lg",
+      message: "rounded-2xl",
+      userMessage: "bg-primary text-primary-foreground rounded-2xl",
+      assistantMessage: "bg-muted rounded-2xl",
+      input: "rounded-full",
+      button: "rounded-full",
+    },
+    classic: {
+      card: "rounded-none shadow-sm border-2",
+      message: "rounded-none",
+      userMessage: "bg-primary text-primary-foreground rounded-none",
+      assistantMessage: "bg-muted rounded-none border",
+      input: "rounded-none",
+      button: "rounded-none",
+    },
+    minimalist: {
+      card: "rounded-lg shadow-none border",
+      message: "rounded-lg",
+      userMessage: "bg-primary/90 text-primary-foreground rounded-lg",
+      assistantMessage: "bg-transparent border rounded-lg",
+      input: "rounded-lg border-muted",
+      button: "rounded-lg",
+    },
+  };
+
+  const currentTheme = themeStyles[selectedTheme as keyof typeof themeStyles] || themeStyles.material;
+
+  // Font family mapping
+  const fontFamilies: Record<string, string> = {
+    'Inter': "'Inter', sans-serif",
+    'Roboto': "'Roboto', sans-serif",
+    'Open Sans': "'Open Sans', sans-serif",
+    'Montserrat': "'Montserrat', sans-serif",
+    'Playfair Display': "'Playfair Display', serif",
+    'Source Sans Pro': "'Source Sans Pro', sans-serif",
+  };
+
+  const fontFamily = fontFamilies[selectedFont] || fontFamilies['Inter'];
+
+  // Load Google Font dynamically
+  useEffect(() => {
+    if (selectedFont && selectedFont !== 'Inter') {
+      const fontName = selectedFont.replace(/ /g, '+');
+      const linkId = 'dynamic-google-font';
+      let linkEl = document.getElementById(linkId) as HTMLLinkElement;
+      
+      if (!linkEl) {
+        linkEl = document.createElement('link');
+        linkEl.id = linkId;
+        linkEl.rel = 'stylesheet';
+        document.head.appendChild(linkEl);
+      }
+      
+      linkEl.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@400;500;600;700&display=swap`;
+    }
+  }, [selectedFont]);
 
   // Simple Markdown to HTML renderer
   const renderMarkdown = (text: string): string => {
@@ -233,7 +295,7 @@ export default function AssistantEditor() {
         </div>
 
         {/* Chat Container */}
-        <Card className="flex-1 flex flex-col overflow-hidden">
+        <Card className={`flex-1 flex flex-col overflow-hidden ${currentTheme.card}`} style={{ fontFamily }}>
           <CardContent className="flex-1 flex flex-col p-0">
             {/* Assistant Info Header */}
             <div className="p-4 border-b flex items-center justify-between">
@@ -272,10 +334,10 @@ export default function AssistantEditor() {
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-xl px-4 py-3 ${
+                    className={`max-w-[80%] px-4 py-3 ${
                       message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
+                        ? currentTheme.userMessage
+                        : currentTheme.assistantMessage
                     }`}
                   >
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
@@ -326,12 +388,13 @@ export default function AssistantEditor() {
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask your library assistant anything..."
-                  className="flex-1"
+                  className={`flex-1 ${currentTheme.input}`}
                   data-testid="input-chat-message"
                 />
                 <Button 
                   onClick={() => handleSend()} 
                   disabled={!inputValue.trim() || isTyping}
+                  className={currentTheme.button}
                   data-testid="button-send-message"
                 >
                   <Send className="w-4 h-4" />
