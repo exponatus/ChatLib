@@ -34,6 +34,7 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
   const isFilesPage = location.includes("/files");
   const isTextPage = location.includes("/text");
   const isWebsitePage = location.includes("/website");
+  const isQAPage = location.includes("/qa");
   const basePath = assistantId ? `/assistant/${assistantId}` : '';
 
   const NavContent = () => (
@@ -133,9 +134,12 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
               <Globe className="w-4 h-4" />
               Website
             </Link>
-            <Link href={`/assistant/${assistantId}?tab=qa`} className={`
+            <Link href={`/assistant/${assistantId}/qa`} className={`
               flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition-all duration-200
-              text-muted-foreground hover:bg-muted hover:text-foreground
+              ${isQAPage 
+                ? "bg-primary text-primary-foreground" 
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }
             `}>
               <HelpCircle className="w-4 h-4" />
               Q&A
