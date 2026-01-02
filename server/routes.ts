@@ -192,12 +192,19 @@ export async function registerRoutes(
       const docs = await storage.getDocuments(assistant.id);
       const contextText = docs.map(d => `Source: ${d.title}\n${d.content}`).join("\n\n");
 
-      // 4. Construct Prompt
+      // 4. Construct Prompt - Strict RAG: ONLY use knowledge base
       const systemInstruction = `
-        ${assistant.systemPrompt}
-        
-        Use the following knowledge base to answer the user's question if relevant:
-        ${contextText}
+${assistant.systemPrompt}
+
+CRITICAL INSTRUCTION: You must ONLY use the information provided in the KNOWLEDGE BASE below to answer questions.
+- DO NOT use any external knowledge or information from your training data.
+- If the answer is not found in the KNOWLEDGE BASE, say: "I don't have information about that in my knowledge base. Please contact the library staff for assistance."
+- Never make up or guess information that is not explicitly stated in the KNOWLEDGE BASE.
+- For Q&A entries, match the user's question to the closest question in the knowledge base and provide the corresponding answer.
+
+=== KNOWLEDGE BASE START ===
+${contextText || "No documents in knowledge base yet."}
+=== KNOWLEDGE BASE END ===
       `;
 
       const history = await storage.getMessages(conversationId);
