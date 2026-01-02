@@ -45,7 +45,7 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
     <div className="flex flex-col h-full">
       <div className="px-6 py-6">
         <Link href="/" className="flex items-center gap-3 group">
-          <img src={chatLibLogo} alt="ChatLib" className="w-10 h-10 rounded-xl" />
+          <img src={chatLibLogo} alt="ChatLib" className="w-10 h-10 rounded-xl" style={{ filter: 'hue-rotate(-30deg) saturate(1.2)' }} />
           <span className="font-display font-bold text-xl tracking-tight">ChatLib</span>
         </Link>
       </div>
@@ -208,7 +208,7 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border h-14 flex items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <img src={chatLibLogo} alt="ChatLib" className="w-8 h-8 rounded-lg" />
+          <img src={chatLibLogo} alt="ChatLib" className="w-8 h-8 rounded-lg" style={{ filter: 'hue-rotate(-30deg) saturate(1.2)' }} />
           <span className="font-display font-bold text-lg">ChatLib</span>
         </Link>
         <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>

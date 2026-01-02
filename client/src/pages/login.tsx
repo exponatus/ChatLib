@@ -21,7 +21,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50 flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full text-center space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="flex justify-center mb-6">
-          <img src={chatLibLogo} alt="ChatLib" className="w-20 h-20 rounded-3xl rotate-3 shadow-lg shadow-primary/10" />
+          <img src={chatLibLogo} alt="ChatLib" className="w-20 h-20 rounded-3xl rotate-3 shadow-lg shadow-primary/10" style={{ filter: 'hue-rotate(-30deg) saturate(1.2)' }} />
         </div>
         
         <div className="space-y-2">
