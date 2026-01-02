@@ -71,6 +71,23 @@ export default function ChatInterfacePage() {
       setAssistantName(assistant.name || "Library Assistant");
       setGreetingMessage(assistant.welcomeMessage || "Hello! I'm here to help you with library services, borrowing rules, events, and digital resources. How can I assist you today?");
       setAvatarImage(assistant.coverImage || null);
+      
+      // Load Chat Interface settings from deploymentConfig
+      const config = assistant.deploymentConfig as {
+        theme?: string;
+        font?: string;
+        suggestedPrompts?: string[];
+        footerText?: string;
+        showGeminiBranding?: boolean;
+      } | null;
+      
+      if (config) {
+        if (config.theme) setSelectedTheme(config.theme);
+        if (config.font) setSelectedFont(config.font);
+        if (config.suggestedPrompts) setSuggestedPrompts(config.suggestedPrompts);
+        if (config.footerText !== undefined) setFooterText(config.footerText);
+        if (config.showGeminiBranding !== undefined) setShowGeminiBranding(config.showGeminiBranding);
+      }
     }
   }, [assistant]);
 
@@ -100,10 +117,23 @@ export default function ChatInterfacePage() {
 
   const handleApplyChanges = async () => {
     if (!assistant) return;
+    
+    // Merge new settings with existing deploymentConfig
+    const existingConfig = assistant.deploymentConfig || {};
+    const newConfig = {
+      ...existingConfig,
+      theme: selectedTheme,
+      font: selectedFont,
+      suggestedPrompts: suggestedPrompts,
+      footerText: footerText,
+      showGeminiBranding: showGeminiBranding,
+    };
+    
     await updateAssistant({
       id: assistantId,
       name: assistantName,
       welcomeMessage: greetingMessage,
+      deploymentConfig: newConfig,
     });
   };
 

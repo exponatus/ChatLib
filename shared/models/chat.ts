@@ -21,6 +21,12 @@ export const assistants = pgTable("assistants", {
   deploymentConfig: jsonb("deployment_config").$type<{
     primaryColor?: string;
     allowedDomains?: string[];
+    // Chat Interface settings
+    theme?: string;
+    font?: string;
+    suggestedPrompts?: string[];
+    footerText?: string;
+    showGeminiBranding?: boolean;
   }>(),
   lastTrainedAt: timestamp("last_trained_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
