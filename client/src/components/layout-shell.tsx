@@ -208,7 +208,7 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
       {/* Mobile Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-b border-border h-14 flex items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <Library className="w-5 h-5 text-primary" />
+          <img src={chatLibLogo} alt="ChatLib" className="w-8 h-8 rounded-lg" />
           <span className="font-display font-bold text-lg">ChatLib</span>
         </Link>
         <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
