@@ -18,8 +18,13 @@ import {
   Check,
   X,
   Info,
-  Rocket
+  Rocket,
+  BarChart3,
+  Search,
+  WifiOff
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import {
   Collapsible,
@@ -36,9 +41,12 @@ export default function DeployPage() {
   const { toast } = useToast();
 
   const [isDomainsOpen, setIsDomainsOpen] = useState(true);
-  const [isLive, setIsLive] = useState(true);
+  const [isLive, setIsLive] = useState(false);
   const [subDomain, setSubDomain] = useState("chat.yourlibrary.org");
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [googleAnalyticsId, setGoogleAnalyticsId] = useState("");
+  const [seoDescription, setSeoDescription] = useState("");
+  const [searchGrounding, setSearchGrounding] = useState(false);
 
   const shareUrl = `https://chatlib.app/c/${assistantId}?embed=true`;
   const embedCode = `<iframe src="${shareUrl}" width="100%" height="600" frameborder="0"></iframe>`;
@@ -80,42 +88,38 @@ export default function DeployPage() {
         </div>
 
         <div className="max-w-4xl space-y-6">
-          {/* Live Status Card */}
-          <Card className={isLive ? "border-green-200 bg-green-50/30" : "border-border"}>
+          {/* Status Card */}
+          <Card className={isLive ? "border-green-200 bg-green-50/30" : "border-muted"}>
             <CardContent className="py-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className={`p-3 rounded-xl ${isLive ? 'bg-green-500' : 'bg-muted'}`}>
-                    <Rocket className={`w-6 h-6 ${isLive ? 'text-white' : 'text-muted-foreground'}`} />
+                    {isLive ? (
+                      <Rocket className="w-6 h-6 text-white" />
+                    ) : (
+                      <WifiOff className="w-6 h-6 text-muted-foreground" />
+                    )}
                   </div>
                   <div>
                     <p className="font-semibold text-lg">
-                      {isLive ? "Assistant is LIVE" : "Assistant is Offline"}
+                      {isLive ? "Assistant is LIVE" : "Assistant is OFFLINE"}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {isLive 
                         ? "Your library community can now access the assistant via all enabled channels."
-                        : "Publish your assistant to make it accessible to patrons."
+                        : "Visible only in the workspace playground for internal testing."
                       }
                     </p>
                   </div>
                 </div>
-                {isLive ? (
-                  <Button 
-                    variant="outline" 
-                    className="text-destructive border-destructive hover:bg-destructive/10"
-                    onClick={handleUnpublish}
-                    data-testid="button-unpublish"
-                  >
-                    <X className="w-4 h-4 mr-2" />
-                    Unpublish Assistant
-                  </Button>
-                ) : (
-                  <Button onClick={handlePublish} data-testid="button-publish">
-                    <Rocket className="w-4 h-4 mr-2" />
-                    Publish Assistant
-                  </Button>
-                )}
+                <Button 
+                  onClick={isLive ? handleUnpublish : handlePublish} 
+                  className={isLive ? "bg-destructive hover:bg-destructive/90" : ""}
+                  data-testid={isLive ? "button-unpublish" : "button-publish"}
+                >
+                  <Rocket className="w-4 h-4 mr-2" />
+                  {isLive ? "Unpublish" : "Publish to Public"}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -207,21 +211,108 @@ export default function DeployPage() {
               </TabsContent>
 
               <TabsContent value="google-sites" className="mt-0">
-                <CardContent className="pt-6">
-                  <div className="py-8 text-center text-muted-foreground">
-                    <Globe className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm font-medium">Google Sites Integration</p>
-                    <p className="text-xs mt-1">Step-by-step guide for embedding in Google Sites coming soon...</p>
+                <CardContent className="pt-6 space-y-6">
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <Globe className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">Integrating with Google Sites</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Google Sites is common in libraries. To add ChatLib, follow these steps:
+                      </p>
+                      <ol className="text-sm space-y-2 text-muted-foreground">
+                        <li>1. Open your <strong className="text-foreground">Google Site</strong> in edit mode.</li>
+                        <li>2. In the right sidebar, click <strong className="text-foreground">Embed</strong>.</li>
+                        <li>3. Select the <strong className="text-foreground">By URL</strong> tab.</li>
+                        <li>4. Paste the <strong className="text-foreground">Direct Share Link</strong> provided below.</li>
+                        <li>5. Click <strong className="text-foreground">Insert</strong> and resize the element to fit the page width.</li>
+                      </ol>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      GOOGLE SITES LINK
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input 
+                        value={shareUrl}
+                        readOnly
+                        className="text-xs font-mono bg-muted/30"
+                        data-testid="input-google-sites-url"
+                      />
+                      <Button 
+                        variant="outline"
+                        onClick={() => copyToClipboard(shareUrl, 'google-sites')}
+                        data-testid="button-copy-google-sites"
+                      >
+                        {copiedField === 'google-sites' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                        <span className="ml-2">Copy Link</span>
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </TabsContent>
 
               <TabsContent value="seo" className="mt-0">
-                <CardContent className="pt-6">
-                  <div className="py-8 text-center text-muted-foreground">
-                    <Globe className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm font-medium">SEO & Analytics</p>
-                    <p className="text-xs mt-1">Search optimization and usage analytics coming soon...</p>
+                <CardContent className="pt-6 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Google Analytics */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="w-4 h-4 text-primary" />
+                        <h3 className="font-semibold">Google Analytics 4</h3>
+                      </div>
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        MEASUREMENT ID
+                      </Label>
+                      <Input 
+                        value={googleAnalyticsId}
+                        onChange={(e) => setGoogleAnalyticsId(e.target.value)}
+                        placeholder="G-XXXXXXXXXX"
+                        data-testid="input-ga-id"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Connect your library's GA4 property to track user sessions and message volume.
+                      </p>
+                    </div>
+
+                    {/* SEO Meta Description */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Search className="w-4 h-4 text-primary" />
+                        <h3 className="font-semibold">Google Search Discovery</h3>
+                      </div>
+                      <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        SEO META DESCRIPTION
+                      </Label>
+                      <Textarea 
+                        value={seoDescription}
+                        onChange={(e) => setSeoDescription(e.target.value)}
+                        placeholder="Institutional AI guide for patrons..."
+                        className="resize-none h-20"
+                        data-testid="input-seo-description"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Google Search Grounding */}
+                  <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <Search className="w-5 h-5 text-primary mt-0.5" />
+                      <div>
+                        <h3 className="font-semibold">Google Search Grounding</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Allow Gemini to use real-time web results for library-external queries.
+                        </p>
+                      </div>
+                    </div>
+                    <Switch 
+                      checked={searchGrounding}
+                      onCheckedChange={setSearchGrounding}
+                      data-testid="switch-search-grounding"
+                    />
                   </div>
                 </CardContent>
               </TabsContent>
