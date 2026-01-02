@@ -32,12 +32,26 @@ export default function AssistantEditor() {
   const [conversationId, setConversationId] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const suggestedPrompts = [
-    "How do I get a library card?",
-    "How do I renew my items?",
-    "What are the opening hours?",
-    "Do you have e-books?"
-  ];
+  // Get settings from deploymentConfig
+  const config = assistant?.deploymentConfig as {
+    theme?: string;
+    font?: string;
+    suggestedPrompts?: string[];
+    footerText?: string;
+    showGeminiBranding?: boolean;
+  } | null;
+  
+  const suggestedPrompts = config?.suggestedPrompts?.length 
+    ? config.suggestedPrompts 
+    : [
+        "How do I get a library card?",
+        "How do I renew my items?",
+        "What are the opening hours?",
+        "Do you have e-books?"
+      ];
+  
+  const footerText = config?.footerText || "";
+  const showGeminiBranding = config?.showGeminiBranding !== false;
 
   const createChatSession = async () => {
     try {
@@ -320,8 +334,9 @@ export default function AssistantEditor() {
                   <span className="w-2 h-2 rounded-full bg-amber-500" />
                   <span className="uppercase tracking-wide font-medium">Testing Environment</span>
                 </div>
-                <div>
-                  <span>© 2026 ChatLib.de — Alexander Ananyev</span>
+                <div className="flex items-center gap-2">
+                  {footerText && <span>{footerText}</span>}
+                  {showGeminiBranding && <span>© 2026 ChatLib.de — Alexander Ananyev</span>}
                 </div>
               </div>
             </div>
