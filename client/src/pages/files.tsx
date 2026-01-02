@@ -94,22 +94,26 @@ export default function FilesPage() {
     }
   };
 
-  const toggleSelectAll = () => {
-    if (documents && selectedFiles.size === documents.length) {
-      setSelectedFiles(new Set());
-    } else if (documents) {
-      setSelectedFiles(new Set(documents.map(d => d.id)));
-    }
-  };
-
+  // Filter to only show file uploads (not Q&A, text, or website sources)
   const filteredDocs = documents?.filter(doc => 
+    doc.sourceType === 'upload' &&
     doc.title.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
-  const totalStorageKB = documents?.reduce((acc, doc) => {
+  // Only count storage for file uploads
+  const fileUploads = documents?.filter(doc => doc.sourceType === 'upload') || [];
+  const totalStorageKB = fileUploads.reduce((acc, doc) => {
     const metadata = doc.metadata as { size?: number } | null;
     return acc + (metadata?.size || 0);
-  }, 0) || 0;
+  }, 0);
+
+  const toggleSelectAll = () => {
+    if (filteredDocs.length > 0 && selectedFiles.size === filteredDocs.length) {
+      setSelectedFiles(new Set());
+    } else {
+      setSelectedFiles(new Set(filteredDocs.map(d => d.id)));
+    }
+  };
 
   if (isLoadingAssistant) {
     return (
