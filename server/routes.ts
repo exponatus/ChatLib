@@ -235,6 +235,37 @@ export async function registerRoutes(
       .filter(word => word.length > 2 && !stopWords.has(word));
   }
 
+  // Helper: Detect language based on character analysis
+  function detectLanguage(text: string): 'ru' | 'en' {
+    const cyrillicPattern = /[\u0400-\u04FF]/;
+    const cyrillicCount = (text.match(/[\u0400-\u04FF]/g) || []).length;
+    const latinCount = (text.match(/[a-zA-Z]/g) || []).length;
+    
+    // If more Cyrillic than Latin, it's Russian
+    if (cyrillicCount > latinCount) return 'ru';
+    return 'en';
+  }
+
+  // Localized strings
+  const i18n = {
+    greeting: {
+      ru: "Здравствуйте! Я библиотечный ассистент. Чем могу помочь вам сегодня?",
+      en: "Hello! I'm the library assistant. How can I help you today?"
+    },
+    offTopic: {
+      ru: "Извините, я могу помочь только с вопросами о нашей библиотеке и её услугах. Если у вас есть вопросы о книгах, абонементах, мероприятиях или услугах библиотеки - я с радостью помогу!",
+      en: "Sorry, I can only help with questions about our library and its services. If you have questions about books, memberships, events, or library services - I'll be happy to help!"
+    },
+    noInfo: {
+      ru: "К сожалению, у меня нет этой информации. Пожалуйста, обратитесь к сотрудникам библиотеки.",
+      en: "Unfortunately, I don't have this information. Please contact the library staff."
+    },
+    emptyKB: {
+      ru: "База знаний пуста.",
+      en: "Knowledge base is empty."
+    }
+  };
+
   // Helper: Find matching FAQ entry - exact match only
   function findFaqMatch(userQuestion: string, docs: any[]): string | null {
     const normalizedQuery = normalizeText(userQuestion);
@@ -346,16 +377,19 @@ export async function registerRoutes(
       const docs = await storage.getDocuments(assistant.id);
 
       // 3a. Handle simple greetings without AI
-      const greetings = ['привет', 'здравствуй', 'здравствуйте', 'добрый день', 'доброе утро', 'добрый вечер', 'hi', 'hello', 'hey'];
+      const greetings = ['привет', 'здравствуй', 'здравствуйте', 'добрый день', 'доброе утро', 'добрый вечер', 'hi', 'hello', 'hey', 'good morning', 'good afternoon', 'good evening'];
       const contentLower = content.toLowerCase().trim();
       const isGreeting = greetings.some(g => contentLower === g || contentLower.startsWith(g + ' ') || contentLower.startsWith(g + ',') || contentLower.startsWith(g + '!'));
+      
+      // Detect language of user message
+      const userLang = detectLanguage(content);
       
       if (isGreeting && contentLower.length < 50) {
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
         
-        const greetingResponse = assistant.welcomeMessage || "Здравствуйте! Я библиотечный ассистент. Чем могу помочь вам сегодня?";
+        const greetingResponse = assistant.welcomeMessage || i18n.greeting[userLang];
         res.write(`data: ${JSON.stringify({ content: greetingResponse })}\n\n`);
         
         await storage.createMessage({
@@ -402,7 +436,7 @@ export async function registerRoutes(
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
         
-        const offTopicResponse = "Извините, я могу помочь только с вопросами о нашей библиотеке и её услугах. Если у вас есть вопросы о книгах, абонементах, мероприятиях или услугах библиотеки - я с радостью помогу!";
+        const offTopicResponse = i18n.offTopic[userLang];
         res.write(`data: ${JSON.stringify({ content: offTopicResponse })}\n\n`);
         
         await storage.createMessage({
@@ -471,8 +505,20 @@ export async function registerRoutes(
 
       const formattedContext = contextParts.join("\n\n---\n\n");
 
+      // Build localized system instruction
+      const noInfoMsg = i18n.noInfo[userLang];
+      const offTopicMsg = i18n.offTopic[userLang];
+      const emptyKBMsg = i18n.emptyKB[userLang];
+      const langInstruction = userLang === 'ru' 
+        ? 'ВАЖНО: Отвечай на русском языке, так как пользователь пишет по-русски.'
+        : 'IMPORTANT: Respond in English, as the user is writing in English.';
+
       const systemInstruction = `=== YOUR IDENTITY AND INSTRUCTIONS ===
 ${assistant.systemPrompt || 'You are a helpful library assistant.'}
+
+=== LANGUAGE RULE ===
+${langInstruction}
+Always respond in the same language as the user's message.
 
 === CRITICAL OPERATING RULES ===
 
@@ -481,13 +527,13 @@ Your ENTIRE knowledge consists ONLY of what is in the KNOWLEDGE BASE section bel
 
 RULE 1: You can ONLY answer questions using information from the KNOWLEDGE BASE.
 RULE 2: You have NO other knowledge. Pretend the KNOWLEDGE BASE is everything you know.
-RULE 3: If the question cannot be answered from the KNOWLEDGE BASE, say: "К сожалению, у меня нет этой информации. Пожалуйста, обратитесь к сотрудникам библиотеки."
-RULE 4: If asked about topics not in the KNOWLEDGE BASE (weather, news, general facts, etc.), say: "Извините, я могу помочь только с вопросами о нашей библиотеке и её услугах."
+RULE 3: If the question cannot be answered from the KNOWLEDGE BASE, say: "${noInfoMsg}"
+RULE 4: If asked about topics not in the KNOWLEDGE BASE (weather, news, general facts, etc.), say: "${offTopicMsg}"
 RULE 5: NEVER use your general training data. You only know what's in the KNOWLEDGE BASE.
 RULE 6: Be polite, clear, and helpful within these constraints.
 
 === KNOWLEDGE BASE (THIS IS ALL YOU KNOW) ===
-${formattedContext || "База знаний пуста."}`;
+${formattedContext || emptyKBMsg}`;
 
       const history = await storage.getMessages(conversationId);
       const contents = history.map(m => ({
