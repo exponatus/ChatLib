@@ -40,6 +40,21 @@ import {
 import { useDeleteAssistant, useUpdateAssistant } from "@/hooks/use-assistants";
 import { useState, useRef } from "react";
 
+const pastelGradients = [
+  "bg-gradient-to-br from-rose-200 via-pink-100 to-purple-200",
+  "bg-gradient-to-br from-sky-200 via-cyan-100 to-blue-200",
+  "bg-gradient-to-br from-amber-200 via-orange-100 to-yellow-200",
+  "bg-gradient-to-br from-emerald-200 via-green-100 to-teal-200",
+  "bg-gradient-to-br from-violet-200 via-purple-100 to-fuchsia-200",
+  "bg-gradient-to-br from-lime-200 via-emerald-100 to-cyan-200",
+  "bg-gradient-to-br from-pink-200 via-rose-100 to-red-200",
+  "bg-gradient-to-br from-indigo-200 via-blue-100 to-sky-200",
+];
+
+function getGradient(id: number): string {
+  return pastelGradients[id % pastelGradients.length];
+}
+
 export function AssistantCard({ assistant }: { assistant: Assistant }) {
   const { mutate: deleteAssistant, isPending } = useDeleteAssistant();
   const { mutateAsync: updateAssistant } = useUpdateAssistant();
@@ -80,7 +95,7 @@ export function AssistantCard({ assistant }: { assistant: Assistant }) {
     <>
       <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 border-border/60">
         {/* Cover Image Area */}
-        <div className="relative h-32 bg-gradient-to-br from-amber-100 to-orange-50 flex items-center justify-center">
+        <div className={`relative h-32 flex items-center justify-center ${!assistant.coverImage ? getGradient(assistant.id) : ''}`}>
           {assistant.coverImage ? (
             <img 
               src={assistant.coverImage} 
@@ -88,10 +103,8 @@ export function AssistantCard({ assistant }: { assistant: Assistant }) {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-16 h-16 rounded-lg bg-amber-200/50 flex items-center justify-center">
-              <div className="w-10 h-8 bg-amber-400 rounded-sm relative">
-                <div className="absolute bottom-0 left-1 w-8 h-6 bg-blue-400 rounded-t-sm" />
-              </div>
+            <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
+              <span className="text-3xl font-bold text-white/80">{assistant.name.charAt(0).toUpperCase()}</span>
             </div>
           )}
 
