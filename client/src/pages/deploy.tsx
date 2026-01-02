@@ -1,6 +1,6 @@
 import { useParams } from "wouter";
 import { LayoutShell } from "@/components/layout-shell";
-import { useAssistant } from "@/hooks/use-assistants";
+import { useAssistant, useUpdateAssistant } from "@/hooks/use-assistants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,16 +38,17 @@ export default function DeployPage() {
   const assistantId = Number(id);
   
   const { data: assistant, isLoading } = useAssistant(assistantId);
+  const { mutateAsync: updateAssistant } = useUpdateAssistant();
   const { toast } = useToast();
 
   const [isDomainsOpen, setIsDomainsOpen] = useState(true);
-  const [isLive, setIsLive] = useState(false);
   const [subDomain, setSubDomain] = useState("chat.yourlibrary.org");
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [googleAnalyticsId, setGoogleAnalyticsId] = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [searchGrounding, setSearchGrounding] = useState(false);
 
+  const isLive = assistant?.isPublished ?? false;
   const shareUrl = `https://chatlib.app/c/${assistantId}?embed=true`;
   const embedCode = `<iframe src="${shareUrl}" width="100%" height="600" frameborder="0"></iframe>`;
 
@@ -58,14 +59,12 @@ export default function DeployPage() {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
-  const handleUnpublish = () => {
-    setIsLive(false);
-    toast({ title: "Assistant unpublished" });
+  const handleUnpublish = async () => {
+    await updateAssistant({ id: assistantId, isPublished: false });
   };
 
-  const handlePublish = () => {
-    setIsLive(true);
-    toast({ title: "Assistant published!" });
+  const handlePublish = async () => {
+    await updateAssistant({ id: assistantId, isPublished: true });
   };
 
   if (isLoading) {

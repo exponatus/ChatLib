@@ -106,10 +106,16 @@ export function AssistantCard({ assistant }: { assistant: Assistant }) {
 
           {/* Badges */}
           <div className="absolute top-3 left-3 flex gap-2">
-            {assistant.isDemo ? (
+            {assistant.isDemo && (
               <Badge className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-0.5">
                 <Star className="w-3 h-3 mr-1" />
                 DEMO
+              </Badge>
+            )}
+            {assistant.isPublished ? (
+              <Badge className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5">
+                <span className="w-2 h-2 rounded-full bg-white mr-1.5" />
+                LIVE
               </Badge>
             ) : (
               <Badge variant="outline" className="bg-white/90 text-[10px] font-bold px-2 py-0.5">

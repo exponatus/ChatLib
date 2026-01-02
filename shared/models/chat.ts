@@ -17,6 +17,7 @@ export const assistants = pgTable("assistants", {
   welcomeMessage: text("welcome_message"),
   coverImage: text("cover_image"), // URL or base64 of cover image
   isDemo: boolean("is_demo").default(false), // Demo assistants cannot be deleted
+  isPublished: boolean("is_published").default(false), // Whether assistant is live
   deploymentConfig: jsonb("deployment_config").$type<{
     primaryColor?: string;
     allowedDomains?: string[];
