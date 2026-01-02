@@ -39,14 +39,15 @@ export default function AssistantEditor() {
   ];
 
   useEffect(() => {
-    if (assistant && messages.length === 0) {
+    if (assistant) {
+      // Always update welcome message when assistant data changes
       setMessages([{
         id: "welcome",
         role: "assistant",
         content: assistant.welcomeMessage || "Hello! I'm here to help you with library services, borrowing rules, events, and digital resources. How can I assist you today?"
       }]);
     }
-  }, [assistant]);
+  }, [assistant?.welcomeMessage, assistant?.name]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -128,8 +129,12 @@ export default function AssistantEditor() {
             {/* Assistant Info Header */}
             <div className="p-4 border-b flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <MessageSquare className="w-5 h-5 text-primary" />
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
+                  {assistant.coverImage ? (
+                    <img src={assistant.coverImage} alt={assistant.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <MessageSquare className="w-5 h-5 text-primary" />
+                  )}
                 </div>
                 <div>
                   <p className="font-semibold">{assistant.name}</p>
