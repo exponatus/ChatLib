@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import AssistantEditor from "@/pages/assistant-editor";
 import FilesPage from "@/pages/files";
 import TextPage from "@/pages/text";
+import WebsitePage from "@/pages/website";
 import LoginPage from "@/pages/login";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
@@ -50,6 +51,10 @@ function Router() {
       
       <Route path="/assistant/:id/text">
         {() => <ProtectedRoute component={TextPage} />}
+      </Route>
+      
+      <Route path="/assistant/:id/website">
+        {() => <ProtectedRoute component={WebsitePage} />}
       </Route>
       
       <Route component={NotFound} />
