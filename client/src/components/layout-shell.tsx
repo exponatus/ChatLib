@@ -35,6 +35,7 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
   const isTextPage = location.includes("/text");
   const isWebsitePage = location.includes("/website");
   const isQAPage = location.includes("/qa");
+  const isAIWorkspacePage = location.includes("/ai-workspace");
   const basePath = assistantId ? `/assistant/${assistantId}` : '';
 
   const NavContent = () => (
@@ -69,9 +70,12 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
                 Configure
               </p>
             </div>
-            <Link href={`/assistant/${assistantId}`} className={`
+            <Link href={`/assistant/${assistantId}/ai-workspace`} className={`
               flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition-all duration-200
-              text-muted-foreground hover:bg-muted hover:text-foreground
+              ${isAIWorkspacePage 
+                ? "bg-primary text-primary-foreground" 
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }
             `}>
               <Cpu className="w-4 h-4" />
               AI Workspace

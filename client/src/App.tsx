@@ -10,6 +10,7 @@ import FilesPage from "@/pages/files";
 import TextPage from "@/pages/text";
 import WebsitePage from "@/pages/website";
 import QAPage from "@/pages/qa";
+import AIWorkspacePage from "@/pages/ai-workspace";
 import LoginPage from "@/pages/login";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
@@ -60,6 +61,10 @@ function Router() {
       
       <Route path="/assistant/:id/qa">
         {() => <ProtectedRoute component={QAPage} />}
+      </Route>
+      
+      <Route path="/assistant/:id/ai-workspace">
+        {() => <ProtectedRoute component={AIWorkspacePage} />}
       </Route>
       
       <Route component={NotFound} />
