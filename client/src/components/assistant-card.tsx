@@ -96,16 +96,12 @@ export function AssistantCard({ assistant }: { assistant: Assistant }) {
       <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 border-border/60">
         {/* Cover Image Area */}
         <div className={`relative h-32 flex items-center justify-center ${!assistant.coverImage ? getGradient(assistant.id) : ''}`}>
-          {assistant.coverImage ? (
+          {assistant.coverImage && (
             <img 
               src={assistant.coverImage} 
               alt={assistant.name}
               className="w-full h-full object-cover"
             />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-sm flex items-center justify-center">
-              <span className="text-3xl font-bold text-white/80">{assistant.name.charAt(0).toUpperCase()}</span>
-            </div>
           )}
 
           {/* Badges */}
@@ -167,7 +163,7 @@ export function AssistantCard({ assistant }: { assistant: Assistant }) {
         <CardContent className="p-4">
           {/* Assistant Name & ID */}
           <h3 className="text-lg font-semibold text-primary mb-1">{assistant.name}</h3>
-          <p className="text-sm text-muted-foreground mb-4">{assistant.id}</p>
+          <p className="text-sm text-muted-foreground mb-4">{assistant.isDemo ? "1" : assistant.id}</p>
 
           {/* Created Date */}
           <div className="flex items-center justify-between">
