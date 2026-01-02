@@ -53,19 +53,23 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
       </div>
 
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-        {/* Playground - always visible */}
-        <Link href="/" className={`
-          flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition-all duration-200
-          ${location === "/" 
-            ? "bg-primary text-primary-foreground" 
-            : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }
-        `}>
-          <Play className="w-4 h-4" />
-          Playground
-        </Link>
-
         {/* Configure Section - shown when editing an assistant */}
+        {isAssistantPage && (
+          <>
+            {/* Playground - only visible on assistant pages */}
+            <Link href={`/assistant/${assistantId}`} className={`
+              flex items-center gap-3 px-4 py-2.5 rounded-lg font-medium transition-all duration-200
+              ${location === `/assistant/${assistantId}` && !isFilesPage && !isTextPage && !isWebsitePage && !isQAPage && !isAIWorkspacePage && !isChatInterfacePage && !isSecurityPage && !isDeployPage
+                ? "bg-primary text-primary-foreground" 
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }
+            `}>
+              <Play className="w-4 h-4" />
+              Playground
+            </Link>
+          </>
+        )}
+
         {isAssistantPage && (
           <>
             <div className="pt-4 pb-2">
