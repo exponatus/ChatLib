@@ -15,20 +15,23 @@ These are the default credentials for testing the application. The default user 
 
 ## Screenshots
 
+### Landing Page
+![Landing](screenshots/landing.png)
+
 ### Dashboard
 ![Dashboard](screenshots/dashboard.png)
 
 ### Chat Playground
 ![Chat Playground](screenshots/playground.png)
 
-### Knowledge Base
-![Knowledge Base](screenshots/knowledge-base.png)
+### AI Workspace
+![AI Workspace](screenshots/ai-workspace.png)
 
-### Chat Interface Settings
-![Chat Interface](screenshots/chat-interface.png)
+### Knowledge Base - Files
+![Knowledge Base Files](screenshots/knowledge-base-files.png)
 
-### User Profile
-![Profile](screenshots/profile.png)
+### Knowledge Base - Q&A
+![Knowledge Base Q&A](screenshots/knowledge-base-qa.png)
 
 ## Features
 
