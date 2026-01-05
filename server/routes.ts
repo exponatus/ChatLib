@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { setupAuth, registerAuthRoutes, isAuthenticated, authStorage } from "./replit_integrations/auth";
 import { registerChatRoutes } from "./replit_integrations/chat";
 import { registerImageRoutes } from "./replit_integrations/image";
 import { api } from "@shared/routes";
@@ -45,6 +45,9 @@ export async function registerRoutes(
   // but we can keep the blueprint ones if needed (mounted at /api/conversations)
   // registerChatRoutes(app); 
   registerImageRoutes(app);
+  
+  // Ensure default user exists
+  await authStorage.ensureDefaultUser();
 
   // === Assistants Routes ===
   app.get(api.assistants.list.path, isAuthenticated, async (req: any, res) => {

@@ -12,6 +12,7 @@ export interface IAuthStorage {
   createUserWithPassword(username: string, password: string, email?: string, firstName?: string): Promise<User>;
   verifyPassword(username: string, password: string): Promise<User | null>;
   updateUserProfile(id: string, data: { firstName?: string; email?: string; profileImageUrl?: string | null }): Promise<User | undefined>;
+  ensureDefaultUser(): Promise<void>;
 }
 
 class AuthStorage implements IAuthStorage {
@@ -68,6 +69,25 @@ class AuthStorage implements IAuthStorage {
       .where(eq(users.id, id))
       .returning();
     return user;
+  }
+
+  async ensureDefaultUser(): Promise<void> {
+    const existing = await this.getUserByUsername("chatlib");
+    if (!existing) {
+      await this.createUserWithPassword(
+        "chatlib",
+        "demo",
+        "admin@chatlib.de",
+        "Admin"
+      );
+      console.log("Default user created: chatlib/demo");
+    } else if (!existing.firstName || !existing.email) {
+      await this.updateUserProfile(existing.id, {
+        firstName: existing.firstName || "Admin",
+        email: existing.email || "admin@chatlib.de"
+      });
+      console.log("Default user updated with missing data");
+    }
   }
 }
 
