@@ -13,6 +13,23 @@ These are the default credentials for testing the application. The default user 
 - Full Name: Admin
 - Email: admin@chatlib.de
 
+## Screenshots
+
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### Chat Playground
+![Chat Playground](screenshots/playground.png)
+
+### Knowledge Base
+![Knowledge Base](screenshots/knowledge-base.png)
+
+### Chat Interface Settings
+![Chat Interface](screenshots/chat-interface.png)
+
+### User Profile
+![Profile](screenshots/profile.png)
+
 ## Features
 
 ### Dual Authentication System
