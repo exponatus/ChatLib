@@ -131,26 +131,28 @@ export default function WebsitePage() {
                 <CollapsibleContent>
                   <CardContent className="pt-0">
                     <Tabs defaultValue="crawl" className="w-full">
-                      <TabsList className="mb-4 bg-transparent border-b border-border rounded-none w-full justify-start h-auto p-0">
-                        <TabsTrigger 
-                          value="crawl" 
-                          className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium"
-                        >
-                          CRAWL LINKS
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="sitemap" 
-                          className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium"
-                        >
-                          SITEMAP
-                        </TabsTrigger>
-                        <TabsTrigger 
-                          value="individual" 
-                          className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium"
-                        >
-                          INDIVIDUAL LINK
-                        </TabsTrigger>
-                      </TabsList>
+                      <div className="overflow-x-auto mb-4">
+                        <TabsList className="bg-transparent border-b border-border rounded-none w-max min-w-full justify-start h-auto p-0">
+                          <TabsTrigger 
+                            value="crawl" 
+                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium whitespace-nowrap"
+                          >
+                            CRAWL LINKS
+                          </TabsTrigger>
+                          <TabsTrigger 
+                            value="sitemap" 
+                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium whitespace-nowrap"
+                          >
+                            SITEMAP
+                          </TabsTrigger>
+                          <TabsTrigger 
+                            value="individual" 
+                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium whitespace-nowrap"
+                          >
+                            INDIVIDUAL
+                          </TabsTrigger>
+                        </TabsList>
+                      </div>
 
                       <TabsContent value="crawl" className="mt-0 space-y-4">
                         <div className="space-y-2">
