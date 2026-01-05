@@ -1,6 +1,6 @@
 import { useParams } from "wouter";
 import { LayoutShell } from "@/components/layout-shell";
-import { useAssistant, useDocuments, useCreateDocument, useDeleteDocument, useRetrainAssistant } from "@/hooks/use-assistants";
+import { useAssistant, useDocuments, useCreateDocument, useUpdateDocument, useDeleteDocument, useRetrainAssistant } from "@/hooks/use-assistants";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,10 @@ import {
   ChevronUp,
   ChevronDown,
   FileText,
-  Trash2
+  Trash2,
+  Pencil,
+  X,
+  Check
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -32,14 +35,46 @@ export default function TextPage() {
   const { data: assistant, isLoading: isLoadingAssistant } = useAssistant(assistantId);
   const { data: documents, isLoading: isLoadingDocs } = useDocuments(assistantId);
   const { mutateAsync: createDocument, isPending: isCreating } = useCreateDocument();
+  const { mutateAsync: updateDocument, isPending: isUpdating } = useUpdateDocument();
   const { mutateAsync: deleteDocument } = useDeleteDocument();
   const { mutateAsync: retrainAssistant, isPending: isRetraining } = useRetrainAssistant();
 
   const [isAddOpen, setIsAddOpen] = useState(true);
   const [assetName, setAssetName] = useState("");
   const [contentBody, setContentBody] = useState("");
+  
+  // Edit state
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editContent, setEditContent] = useState("");
 
   const textDocuments = documents?.filter(d => d.sourceType === 'text') || [];
+
+  const startEditing = (doc: { id: number; title: string; content: string }) => {
+    setEditingId(doc.id);
+    setEditName(doc.title);
+    setEditContent(doc.content);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditName("");
+    setEditContent("");
+  };
+
+  const saveEdit = async () => {
+    if (!editingId || !editName.trim() || !editContent.trim()) return;
+    
+    await updateDocument({
+      id: editingId,
+      assistantId,
+      title: editName,
+      content: editContent,
+      metadata: { size: new Blob([editContent]).size }
+    });
+    
+    cancelEditing();
+  };
 
   const handleAddTextAsset = async () => {
     if (!assetName.trim() || !contentBody.trim()) return;
@@ -166,32 +201,104 @@ export default function TextPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {textDocuments.map(doc => (
-                      <div 
-                        key={doc.id} 
-                        className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg group"
-                        data-testid={`text-item-${doc.id}`}
-                      >
-                        <div className="p-2 bg-purple-50 text-purple-600 rounded-md">
-                          <FileText className="w-4 h-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{doc.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Text Asset • {new Date(doc.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                          onClick={() => deleteDocument({ id: doc.id, assistantId })}
-                          data-testid={`button-delete-${doc.id}`}
+                    {textDocuments.map(doc => {
+                      const isEditing = editingId === doc.id;
+                      
+                      if (isEditing) {
+                        return (
+                          <div 
+                            key={doc.id} 
+                            className="p-4 bg-muted/30 rounded-lg border-2 border-primary/20"
+                            data-testid={`text-edit-${doc.id}`}
+                          >
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                  Asset Name
+                                </Label>
+                                <Input 
+                                  value={editName}
+                                  onChange={(e) => setEditName(e.target.value)}
+                                  data-testid={`edit-name-${doc.id}`}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                  Content Body
+                                </Label>
+                                <Textarea 
+                                  value={editContent}
+                                  onChange={(e) => setEditContent(e.target.value)}
+                                  className="min-h-[150px] resize-none"
+                                  data-testid={`edit-content-${doc.id}`}
+                                />
+                              </div>
+                            </div>
+                            <div className="flex justify-end gap-2 mt-4">
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={cancelEditing}
+                                data-testid={`button-cancel-edit-${doc.id}`}
+                              >
+                                <X className="w-4 h-4 mr-1" />
+                                Cancel
+                              </Button>
+                              <Button 
+                                size="sm"
+                                onClick={saveEdit}
+                                disabled={!editName.trim() || !editContent.trim() || isUpdating}
+                                data-testid={`button-save-edit-${doc.id}`}
+                              >
+                                {isUpdating ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                                Save
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div 
+                          key={doc.id} 
+                          className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg group"
+                          data-testid={`text-item-${doc.id}`}
                         >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ))}
+                          <div className="p-2 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-md">
+                            <FileText className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm truncate">{doc.title}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {(doc.content || '').substring(0, 100)}...
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Text Asset • {new Date(doc.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="opacity-0 group-hover:opacity-100"
+                              onClick={() => startEditing({ id: doc.id, title: doc.title, content: doc.content || '' })}
+                              data-testid={`button-edit-${doc.id}`}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="opacity-0 group-hover:opacity-100 text-destructive"
+                              onClick={() => deleteDocument({ id: doc.id, assistantId })}
+                              data-testid={`button-delete-${doc.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
