@@ -150,7 +150,7 @@ export function registerAuthRoutes(app: Express): void {
         return res.status(401).json({ message: "Unauthorized" });
       }
 
-      const user = await authStorage.updateUserProfile(userId, { profileImageUrl: undefined });
+      const user = await authStorage.updateUserProfile(userId, { profileImageUrl: null });
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }

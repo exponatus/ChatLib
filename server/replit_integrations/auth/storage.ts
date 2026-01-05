@@ -11,7 +11,7 @@ export interface IAuthStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   createUserWithPassword(username: string, password: string, email?: string, firstName?: string): Promise<User>;
   verifyPassword(username: string, password: string): Promise<User | null>;
-  updateUserProfile(id: string, data: { firstName?: string; email?: string; profileImageUrl?: string }): Promise<User | undefined>;
+  updateUserProfile(id: string, data: { firstName?: string; email?: string; profileImageUrl?: string | null }): Promise<User | undefined>;
 }
 
 class AuthStorage implements IAuthStorage {
@@ -61,7 +61,7 @@ class AuthStorage implements IAuthStorage {
     return valid ? user : null;
   }
 
-  async updateUserProfile(id: string, data: { firstName?: string; email?: string; profileImageUrl?: string }): Promise<User | undefined> {
+  async updateUserProfile(id: string, data: { firstName?: string; email?: string; profileImageUrl?: string | null }): Promise<User | undefined> {
     const [user] = await db
       .update(users)
       .set({ ...data, updatedAt: new Date() })
