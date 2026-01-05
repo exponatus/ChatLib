@@ -1,5 +1,3 @@
-![ChatLib preview](screenshots/preview.png)
-
 # ChatLib - AI Assistant Builder for Libraries
 
 ChatLib is a multi-tenant SaaS platform that enables libraries to create, configure, and deploy AI-powered chat assistants without any technical expertise. Built with modern web technologies and powered by Google's Gemini AI models.
