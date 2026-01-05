@@ -2,7 +2,23 @@
 
 ChatLib is a multi-tenant SaaS platform that enables libraries to create, configure, and deploy AI-powered chat assistants without any technical expertise. Built with modern web technologies and powered by Google's Gemini AI models.
 
+## Demo Credentials
+
+```
+Username: chatlib
+Password: demo
+```
+
+These are the default credentials for testing the application. The default user is created automatically on first startup with the following profile:
+- Full Name: Admin
+- Email: admin@chatlib.de
+
 ## Features
+
+### Dual Authentication System
+- **Local Login** - Username/password authentication with bcrypt hashing
+- **Replit Auth** - OAuth via OpenID Connect for Replit users
+- **User Profile** - Avatar upload, name and email editing, personal cabinet
 
 ### AI-Powered Assistants
 - **Google Gemini Integration** - Uses Gemini 2.5 Flash and Pro models via Replit AI Integrations
@@ -32,7 +48,7 @@ ChatLib is a multi-tenant SaaS platform that enables libraries to create, config
 - **Domain Whitelisting** - Restrict widget embedding to specific domains
 - **Rate Limiting** - Configurable requests per minute
 - **IP Blocking** - Block specific IP addresses
-- **Replit Auth** - Secure authentication via OpenID Connect
+- **Password Hashing** - bcrypt with 10 rounds for secure password storage
 
 ## Tech Stack
 
@@ -50,6 +66,7 @@ ChatLib is a multi-tenant SaaS platform that enables libraries to create, config
 - **PostgreSQL** - Database with Drizzle ORM
 - **Passport.js** - Authentication middleware
 - **Google Generative AI** - Gemini model integration
+- **bcryptjs** - Password hashing
 
 ## Getting Started
 
@@ -114,10 +131,15 @@ The application will be available at `http://localhost:5000`.
 ## API Endpoints
 
 ### Authentication
+- `POST /api/auth/login` - Login with username/password
+- `POST /api/auth/register` - Register new user
+- `POST /api/auth/logout` - Logout user
+- `GET /api/auth/user` - Get current user
+- `PATCH /api/auth/user` - Update user profile
+- `POST /api/auth/avatar` - Upload avatar (base64)
+- `DELETE /api/auth/avatar` - Delete avatar
 - `GET /api/auth/replit` - Initiate Replit OAuth
 - `GET /api/auth/replit/callback` - OAuth callback
-- `POST /api/logout` - Logout user
-- `GET /api/user` - Get current user
 
 ### Assistants
 - `GET /api/assistants` - List user's assistants
@@ -139,6 +161,14 @@ The application will be available at `http://localhost:5000`.
 ### Embedding
 - `GET /api/embed/:assistantId/config` - Get widget configuration
 - `POST /api/embed/:assistantId/session` - Create chat session
+
+## Security
+
+- All passwords are hashed with bcrypt (10 rounds)
+- Passwords are never returned in API responses
+- Session-based authentication with secure cookies
+- No secrets or API keys are hardcoded in the codebase
+- Environment variables are used for all sensitive configuration
 
 ## Deployment
 
