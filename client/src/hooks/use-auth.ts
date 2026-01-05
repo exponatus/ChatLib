@@ -72,6 +72,36 @@ async function updateProfile(data: { firstName?: string; email?: string; profile
   return response.json();
 }
 
+async function uploadAvatar(image: string): Promise<User> {
+  const response = await fetch("/api/auth/avatar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ image }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Upload failed");
+  }
+
+  return response.json();
+}
+
+async function deleteAvatar(): Promise<User> {
+  const response = await fetch("/api/auth/avatar", {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Delete failed");
+  }
+
+  return response.json();
+}
+
 export function useAuth() {
   const queryClient = useQueryClient();
   const { data: user, isLoading } = useQuery<User | null>({
@@ -110,6 +140,20 @@ export function useAuth() {
     },
   });
 
+  const uploadAvatarMutation = useMutation({
+    mutationFn: uploadAvatar,
+    onSuccess: (user) => {
+      queryClient.setQueryData(["/api/auth/user"], user);
+    },
+  });
+
+  const deleteAvatarMutation = useMutation({
+    mutationFn: deleteAvatar,
+    onSuccess: (user) => {
+      queryClient.setQueryData(["/api/auth/user"], user);
+    },
+  });
+
   return {
     user,
     isLoading,
@@ -125,5 +169,9 @@ export function useAuth() {
     updateProfile: updateProfileMutation.mutateAsync,
     isUpdatingProfile: updateProfileMutation.isPending,
     updateProfileError: updateProfileMutation.error?.message,
+    uploadAvatar: uploadAvatarMutation.mutateAsync,
+    isUploadingAvatar: uploadAvatarMutation.isPending,
+    deleteAvatar: deleteAvatarMutation.mutateAsync,
+    isDeletingAvatar: deleteAvatarMutation.isPending,
   };
 }
