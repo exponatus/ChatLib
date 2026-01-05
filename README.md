@@ -9,9 +9,7 @@ Username: chatlib
 Password: demo
 ```
 
-These are the default credentials for testing the application. The default user is created automatically on first startup with the following profile:
-- Full Name: Admin
-- Email: admin@chatlib.de
+These are the default credentials for testing the application. 
 
 ## Screenshots
 
