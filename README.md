@@ -235,4 +235,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 Alexander Ananyev
 
-Built with Replit Agent
+![Built with Replit](https://img.shields.io/badge/Built%20with-Replit-orange)
