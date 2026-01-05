@@ -16,6 +16,7 @@ import SecurityPage from "@/pages/security";
 import DeployPage from "@/pages/deploy";
 import LoginPage from "@/pages/login";
 import EmbedPage from "@/pages/embed";
+import ProfilePage from "@/pages/profile";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
 
@@ -85,6 +86,10 @@ function Router() {
       
       <Route path="/assistant/:id/deploy">
         {() => <ProtectedRoute component={DeployPage} />}
+      </Route>
+      
+      <Route path="/profile">
+        {() => <ProtectedRoute component={ProfilePage} />}
       </Route>
       
       <Route component={NotFound} />

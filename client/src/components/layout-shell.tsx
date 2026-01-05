@@ -168,23 +168,27 @@ export function LayoutShell({ children, assistantId }: LayoutShellProps) {
 
       {/* Account Section - Bottom */}
       <div className="mt-auto px-4 pb-4 border-t border-border pt-4">
-        <div className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50">
+        <Link 
+          href="/profile" 
+          className="flex items-center gap-3 p-3 rounded-lg bg-card border border-border/50 hover-elevate cursor-pointer"
+          data-testid="link-profile"
+        >
           <Avatar className="w-9 h-9 border border-border">
             <AvatarImage src={user?.profileImageUrl || undefined} />
             <AvatarFallback className="bg-primary/10 text-primary text-sm">
-              {user?.firstName?.[0] || user?.email?.[0]?.toUpperCase()}
+              {user?.firstName?.[0] || user?.username?.[0]?.toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">
-              {user?.firstName || 'User'}
+              {user?.firstName || user?.username || 'User'}
             </p>
             <p className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
               <Settings className="w-3 h-3" />
               Admin Settings
             </p>
           </div>
-        </div>
+        </Link>
         <Button 
           variant="ghost" 
           className="w-full justify-start mt-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
