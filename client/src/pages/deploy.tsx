@@ -184,27 +184,29 @@ export default function DeployPage() {
           {/* Tabs Section */}
           <Card>
             <Tabs defaultValue="general" className="w-full">
-              <CardHeader className="pb-0">
-                <TabsList className="bg-transparent border-b border-border rounded-none w-full justify-start h-auto p-0">
-                  <TabsTrigger 
-                    value="general" 
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium"
-                  >
-                    GENERAL ACCESS
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="google-sites" 
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium"
-                  >
-                    GOOGLE SITES SETUP
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="seo" 
-                    className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2 text-sm font-medium"
-                  >
-                    SEO & ANALYTICS
-                  </TabsTrigger>
-                </TabsList>
+              <CardHeader className="pb-0 px-0 sm:px-6">
+                <div className="overflow-x-auto">
+                  <TabsList className="bg-transparent border-b border-border rounded-none w-max min-w-full justify-start h-auto p-0">
+                    <TabsTrigger 
+                      value="general" 
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium whitespace-nowrap"
+                    >
+                      GENERAL ACCESS
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="google-sites" 
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium whitespace-nowrap"
+                    >
+                      GOOGLE SITES
+                    </TabsTrigger>
+                    <TabsTrigger 
+                      value="seo" 
+                      className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium whitespace-nowrap"
+                    >
+                      SEO & ANALYTICS
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
               </CardHeader>
 
               <TabsContent value="general" className="mt-0">
