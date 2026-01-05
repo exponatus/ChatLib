@@ -694,9 +694,8 @@ ${formattedContext || emptyKBMsg}`;
       if (cacheEnabled && isFirstMessage && fullResponse.length > 0 && fullResponse.length < 5000) {
         try {
           await storage.cacheResponse(assistant.id, content, fullResponse);
-        } catch (cacheErr) {
-          // Ignore cache errors - duplicate question hash
-          console.log("Cache save skipped (likely duplicate)");
+        } catch {
+          // Ignore cache errors (duplicate question hash)
         }
       }
 
