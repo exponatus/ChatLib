@@ -172,13 +172,36 @@ The application will be available at `http://localhost:5000`.
 
 ## Deployment
 
-ChatLib is designed to run on Replit with built-in deployment support:
+ChatLib can be deployed on any platform that supports Node.js and PostgreSQL:
 
-1. Push your code to the Replit project
-2. Configure environment variables in Secrets
-3. Click "Deploy" to publish
+### General Deployment
 
-The application will be available at your `.replit.app` domain or custom domain.
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up PostgreSQL database
+4. Configure environment variables (see Environment Variables section)
+5. Push database schema: `npm run db:push`
+6. Build the application: `npm run build`
+7. Start production server: `npm start`
+
+### Docker (Optional)
+
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+RUN npm run build
+EXPOSE 5000
+CMD ["npm", "start"]
+```
+
+### Hosting Options
+
+- **VPS/Cloud**: DigitalOcean, AWS EC2, Google Cloud, Azure
+- **PaaS**: Heroku, Railway, Render, Fly.io
+- **Replit**: Use built-in deployment with Secrets for environment variables
 
 ## Contributing
 
@@ -191,7 +214,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Author
 
 Alexander Ananyev
-
----
-
-Built with Replit Agent
