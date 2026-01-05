@@ -131,9 +131,16 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  // Check for local auth session first
+  const session = req.session as any;
+  if (session?.userId && session?.authType === "local") {
+    return next();
+  }
+
+  // Fall back to Replit OIDC auth
   const user = req.user as any;
 
-  if (!req.isAuthenticated() || !user.expires_at) {
+  if (!req.isAuthenticated() || !user?.expires_at) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 

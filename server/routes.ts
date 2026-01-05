@@ -17,6 +17,19 @@ const ai = new GoogleGenAI({
   },
 });
 
+// Helper to get userId from both local and OIDC auth
+function getUserId(req: any): string | null {
+  // Local auth
+  if (req.session?.userId && req.session?.authType === "local") {
+    return req.session.userId;
+  }
+  // OIDC auth
+  if (req.user?.claims?.sub) {
+    return req.user.claims.sub;
+  }
+  return null;
+}
+
 // In-memory rate limit store (in production, use Redis)
 const rateLimitStore: Record<string, number[]> = {};
 
@@ -35,7 +48,7 @@ export async function registerRoutes(
 
   // === Assistants Routes ===
   app.get(api.assistants.list.path, isAuthenticated, async (req: any, res) => {
-    const userId = req.user.claims.sub;
+    const userId = getUserId(req)!;
     // Ensure demo assistant exists
     await storage.ensureDemoAssistant(userId);
     const assistants = await storage.getAssistants(userId);
@@ -48,7 +61,7 @@ export async function registerRoutes(
     const id = parseInt(req.params.id);
     const assistant = await storage.getAssistant(id);
     if (!assistant) return res.status(404).json({ message: "Assistant not found" });
-    if (assistant.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
+    if (assistant.userId !== getUserId(req)) return res.status(401).json({ message: "Unauthorized" });
     res.json(assistant);
   });
 
@@ -57,7 +70,7 @@ export async function registerRoutes(
       const input = api.assistants.create.input.parse(req.body);
       const assistant = await storage.createAssistant({
         ...input,
-        userId: req.user.claims.sub,
+        userId: getUserId(req)!,
         deploymentConfig: input.deploymentConfig || {}
       });
       res.status(201).json(assistant);
@@ -74,7 +87,7 @@ export async function registerRoutes(
       const id = parseInt(req.params.id);
       const existing = await storage.getAssistant(id);
       if (!existing) return res.status(404).json({ message: "Assistant not found" });
-      if (existing.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
+      if (existing.userId !== getUserId(req)) return res.status(401).json({ message: "Unauthorized" });
 
       const input = api.assistants.update.input.parse(req.body);
       const updated = await storage.updateAssistant(id, input);
@@ -88,7 +101,7 @@ export async function registerRoutes(
     const id = parseInt(req.params.id);
     const existing = await storage.getAssistant(id);
     if (!existing) return res.status(404).json({ message: "Assistant not found" });
-    if (existing.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
+    if (existing.userId !== getUserId(req)) return res.status(401).json({ message: "Unauthorized" });
     if (existing.isDemo) return res.status(403).json({ message: "Demo assistant cannot be deleted" });
 
     await storage.deleteAssistant(id);
@@ -101,7 +114,7 @@ export async function registerRoutes(
       const id = parseInt(req.params.id);
       const existing = await storage.getAssistant(id);
       if (!existing) return res.status(404).json({ message: "Assistant not found" });
-      if (existing.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
+      if (existing.userId !== getUserId(req)) return res.status(401).json({ message: "Unauthorized" });
 
       const updated = await storage.updateAssistant(id, { lastTrainedAt: new Date() });
       res.json({ success: true, lastTrainedAt: updated?.lastTrainedAt });
@@ -115,7 +128,7 @@ export async function registerRoutes(
     const assistantId = parseInt(req.params.assistantId);
     const assistant = await storage.getAssistant(assistantId);
     if (!assistant) return res.status(404).json({ message: "Assistant not found" });
-    if (assistant.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
+    if (assistant.userId !== getUserId(req)) return res.status(401).json({ message: "Unauthorized" });
 
     const docs = await storage.getDocuments(assistantId);
     res.json(docs);
@@ -126,7 +139,7 @@ export async function registerRoutes(
       const assistantId = parseInt(req.params.assistantId);
       const assistant = await storage.getAssistant(assistantId);
       if (!assistant) return res.status(404).json({ message: "Assistant not found" });
-      if (assistant.userId !== req.user.claims.sub) return res.status(401).json({ message: "Unauthorized" });
+      if (assistant.userId !== getUserId(req)) return res.status(401).json({ message: "Unauthorized" });
 
       const input = api.documents.create.input.parse(req.body);
       const doc = await storage.createDocument({
