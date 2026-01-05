@@ -399,7 +399,7 @@ export default function EmbedPage() {
           )}
           {config.showGeminiBranding !== false && (
             <p className="text-xs text-muted-foreground text-center mt-1 flex items-center justify-center gap-1">
-              ChatLib.de • Powered by 
+              ChatLib • Powered by 
               <svg className="w-4 h-4 inline-block" viewBox="0 0 24 24" fill="none">
                 <path d="M12 2L2 7l10 5 10-5-10-5z" fill="url(#gemini-embed-grad1)"/>
                 <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#gemini-embed-grad2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>

@@ -413,7 +413,7 @@ export default function AssistantEditor() {
                   )}
                   {showGeminiBranding && (
                     <span className="flex items-center gap-1">
-                      ChatLib.de • Powered by 
+                      ChatLib • Powered by 
                       <svg className="w-4 h-4 inline-block ml-0.5" viewBox="0 0 24 24" fill="none">
                         <path d="M12 2L2 7l10 5 10-5-10-5z" fill="url(#gemini-grad1)"/>
                         <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="url(#gemini-grad2)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
